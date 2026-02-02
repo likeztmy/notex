@@ -1,0 +1,259 @@
+/* Minimal Content Table Styles */
+
+.tableWrapper {
+  width: 100%;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+
+.emptyText {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-linear-text-tertiary);
+}
+
+/* Table Header */
+.tableHeader {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--color-linear-border-primary);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-linear-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.colName { grid-column: span 5 / span 5; }
+.colLastViewed { grid-column: span 2 / span 2; }
+.colUpdated { grid-column: span 2 / span 2; }
+.colCreated { grid-column: span 2 / span 2; }
+.colActions { grid-column: span 1 / span 1; }
+
+/* Table Row */
+.tableRow {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid var(--color-linear-border-primary);
+  transition: background 0.15s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tableRow:hover {
+  background: var(--color-linear-bg-hover);
+}
+
+/* Name Column */
+.nameColumn {
+  grid-column: span 5 / span 5;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: opacity 0.15s ease;
+}
+
+.tableRow:hover .fileIcon {
+  opacity: 0.7;
+}
+
+.fileIcon svg {
+  color: var(--color-linear-text-tertiary);
+  width: 1rem;
+  height: 1rem;
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--color-linear-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.01em;
+}
+
+.filePreview {
+  font-size: 12px;
+  color: var(--color-linear-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.previewText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 2px;
+  font-size: 11px;
+  background: transparent;
+  color: var(--color-linear-text-tertiary);
+  border: 1px solid var(--color-linear-border-primary);
+  transition: all 0.15s ease;
+}
+
+.tableRow:hover .tag {
+  background: var(--color-linear-bg-secondary);
+}
+
+.tag svg {
+  height: 0.625rem;
+  width: 0.625rem;
+}
+
+.tagCount {
+  font-size: 11px;
+  color: var(--color-linear-text-tertiary);
+}
+
+/* Date Columns */
+.dateColumn {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-linear-text-secondary);
+}
+
+/* Actions Column */
+.actionsColumn {
+  grid-column: span 1 / span 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.starButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.starButton svg {
+  color: var(--color-linear-text-tertiary);
+  transition: opacity 0.15s ease;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.starButton:hover svg {
+  opacity: 0.6;
+}
+
+.starButton.starred svg {
+  fill: currentColor;
+  color: var(--color-linear-text-primary);
+}
+
+.moreButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.moreButton svg {
+  color: var(--color-linear-text-tertiary);
+  transition: opacity 0.15s ease;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.moreButton:hover svg {
+  opacity: 0.6;
+}
+
+/* Actions Menu */
+.actionsMenu {
+  position: absolute;
+  right: 0;
+  top: 1.5rem;
+  width: 10rem;
+  border-radius: 2px;
+  box-shadow: var(--shadow-linear-lg);
+  border: 1px solid var(--color-linear-border-primary);
+  background: var(--color-linear-bg-elevated);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.menuButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 13px;
+  color: var(--color-linear-text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.menuButton:hover {
+  background: var(--color-linear-bg-hover);
+}
+
+.menuButton svg {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.menuButton.delete {
+  color: var(--color-linear-error);
+}
+
+.menuButton.delete:hover {
+  background: rgba(239, 68, 68, 0.05);
+}
