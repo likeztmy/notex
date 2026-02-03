@@ -491,3 +491,102 @@
 .ProseMirror {
   transition: font-family 0.2s ease, font-size 0.2s ease, line-height 0.2s ease;
 }
+
+/* ============================================
+   TipTap NodeView Styles for Advanced Blocks
+   ============================================ */
+
+/* NodeView wrapper styling */
+.tiptap-block-wrapper {
+  margin: 1rem 0;
+  position: relative;
+  border-radius: 8px;
+  transition: outline 0.15s ease;
+}
+
+.tiptap-block-wrapper:first-child {
+  margin-top: 0;
+}
+
+/* Selection styling for blocks */
+.ProseMirror-selectednode .tiptap-block-wrapper {
+  outline: 2px solid var(--color-linear-accent-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Drag handle visual feedback */
+.tiptap-block-wrapper[data-drag-handle] {
+  cursor: grab;
+}
+
+.tiptap-block-wrapper[data-drag-handle]:active {
+  cursor: grabbing;
+}
+
+/* Dragging state */
+.ProseMirror-hideselection .tiptap-block-wrapper {
+  opacity: 0.5;
+}
+
+/* Block hover effect - subtle highlight */
+.tiptap-block-wrapper:hover {
+  outline: 1px solid var(--color-linear-border-primary);
+  outline-offset: 2px;
+}
+
+.ProseMirror-selectednode .tiptap-block-wrapper:hover {
+  outline: 2px solid var(--color-linear-accent-primary);
+}
+
+/* Ensure blocks don't inherit prose styles that might conflict */
+.tiptap-block-wrapper * {
+  font-family: var(--editor-font-family, var(--editor-font-sans));
+}
+
+/* Fix for nested scrolling in blocks */
+.tiptap-block-wrapper .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mermaid diagram specific styles */
+.tiptap-block-wrapper .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Chart block responsive container */
+.tiptap-block-wrapper .recharts-responsive-container {
+  min-height: 200px;
+}
+
+/* Habit tracker table scroll */
+.tiptap-block-wrapper table {
+  font-size: 14px;
+}
+
+/* Callout block within TipTap */
+.tiptap-block-wrapper[data-type="callout-block"] {
+  margin: 1.5rem 0;
+}
+
+/* Embed block iframe container */
+.tiptap-block-wrapper[data-type="embed-block"] iframe {
+  border-radius: 4px;
+}
+
+/* Animation for newly inserted blocks */
+@keyframes blockInsert {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tiptap-block-wrapper {
+  animation: blockInsert 0.2s ease-out;
+}

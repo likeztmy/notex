@@ -1,3 +1,13 @@
+import {
+  TasksBlockExtension,
+  HabitsBlockExtension,
+  ChartBlockExtension,
+  MermaidBlockExtension,
+  CalloutBlockExtension,
+  EmbedBlockExtension,
+  CardBlockExtension,
+} from "./extensions";
+
 /**
  * TipTap editor extensions config.
  * Used when creating the editor instance.
@@ -69,6 +79,14 @@ export function getEditorExtensions(deps: {
           ? `Heading ${node.attrs.level}`
           : 'Type "/" for commands...',
     }),
+    // Advanced Block Extensions
+    TasksBlockExtension,
+    HabitsBlockExtension,
+    ChartBlockExtension,
+    MermaidBlockExtension,
+    CalloutBlockExtension,
+    EmbedBlockExtension,
+    CardBlockExtension,
   ];
 }
 

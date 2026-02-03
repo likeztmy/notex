@@ -97,6 +97,63 @@ const COMMAND_DEFS: BlockCommandDef[] = [
     shortcut: "hr",
     run: (e) => e.chain().focus().setHorizontalRule().run(),
   },
+  // Advanced Blocks
+  {
+    title: "Tasks",
+    description: "Create a task list with progress tracking",
+    icon: "☑",
+    category: "Advanced Blocks",
+    shortcut: "tasks",
+    run: (e) => e.chain().focus().insertTasksBlock().run(),
+  },
+  {
+    title: "Habits Tracker",
+    description: "Track habits with a calendar grid",
+    icon: "📅",
+    category: "Advanced Blocks",
+    shortcut: "habits",
+    run: (e) => e.chain().focus().insertHabitsBlock().run(),
+  },
+  {
+    title: "Chart",
+    description: "Create a data visualization chart",
+    icon: "📊",
+    category: "Advanced Blocks",
+    shortcut: "chart",
+    run: (e) => e.chain().focus().insertChartBlock().run(),
+  },
+  {
+    title: "Mermaid Diagram",
+    description: "Create flowcharts and diagrams",
+    icon: "🔀",
+    category: "Advanced Blocks",
+    shortcut: "mermaid",
+    run: (e) => e.chain().focus().insertMermaidBlock().run(),
+  },
+  {
+    title: "Callout",
+    description: "Highlight important information",
+    icon: "💡",
+    category: "Advanced Blocks",
+    shortcut: "callout",
+    run: (e) => e.chain().focus().insertCalloutBlock().run(),
+  },
+  {
+    title: "Embed",
+    description: "Embed YouTube, Figma, or other content",
+    icon: "🔗",
+    category: "Advanced Blocks",
+    shortcut: "embed",
+    run: (e) => e.chain().focus().insertEmbedBlock().run(),
+  },
+  {
+    title: "Card",
+    description: "Create a styled note card",
+    icon: "🃏",
+    category: "Advanced Blocks",
+    shortcut: "card",
+    run: (e) => e.chain().focus().insertCardBlock().run(),
+  },
 ];
 
 /**
