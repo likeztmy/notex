@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import * as React from "react";
 import { ContentTable } from "~/components/ContentTable";
-import { getContentByFolder } from "~/utils/contentStorage";
+import { ContentGrid } from "~/components/ContentGrid";
+import { getContentByFolder, getFolderById } from "~/utils/contentStorage";
+import { PageToolbar } from "~/components/PageToolbar";
+import { ToolbarButton } from "~/components/ToolbarButton";
 import {
   FolderIcon,
   LayoutGridIcon,
@@ -19,195 +22,75 @@ export const Route = createFileRoute("/folders/$folderId")({
 function FolderPage() {
   const { folderId } = Route.useParams();
   const [content, setContent] = React.useState(() =>
-    getContentByFolder(folderId),
+    getContentByFolder(folderId)
   );
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
 
-  // Map folder IDs to display names and emojis
-  const folderConfig: Record<string, { name: string; emoji?: string }> = {
-    unsorted: { name: "Unsorted" },
-    work: { name: "How to use Craft", emoji: "📁" },
-    videos: { name: "How To Videos", emoji: "🎬" },
-    handbook: { name: "Craft Handbook", emoji: "📖" },
-    "getting-started": { name: "Getting Started", emoji: "🚀" },
-  };
-
-  const config = folderConfig[folderId] || { name: folderId };
+  // Get folder info from storage
+  const folder = getFolderById(folderId);
+  const folderName = folder?.name || folderId;
+  const folderEmoji = folder?.emoji;
 
   React.useEffect(() => {
     setContent(getContentByFolder(folderId));
   }, [folderId]);
 
+  const titleWithEmoji = folderEmoji ? (
+    <span className="flex items-center gap-2">
+      <span className="text-lg">{folderEmoji}</span>
+      {folderName}
+    </span>
+  ) : (
+    folderName
+  );
+
   return (
     <div
-      className="min-h-screen"
-      style={{ background: "var(--color-linear-bg-primary)" }}
+      className="h-full flex flex-col"
+      style={{ background: "var(--color-linear-bg-secondary)" }}
     >
-      {/* Header */}
-      <div
-        className="sticky top-0 z-10 border-b"
-        style={{
-          background: "var(--color-linear-bg-elevated)",
-          borderColor: "var(--color-linear-border-primary)",
-        }}
-      >
-        <div className="flex items-center justify-between px-6 py-3">
-          {/* Left: Title */}
-          <div className="flex items-center gap-3">
-            {config.emoji ? (
-              <div className="w-7 h-7 flex items-center justify-center text-lg">
-                {config.emoji}
-              </div>
-            ) : (
-              <div
-                className="w-7 h-7 rounded flex items-center justify-center"
-                style={{
-                  background: "var(--color-linear-bg-tertiary)",
-                }}
-              >
-                <FolderIcon
-                  className="h-4 w-4"
-                  style={{ color: "var(--color-linear-text-secondary)" }}
-                />
-              </div>
-            )}
-            <h1
-              className="text-base font-medium"
-              style={{ color: "var(--color-linear-text-primary)" }}
-            >
-              {config.name}
-            </h1>
-          </div>
-
-          {/* Right: View Controls */}
-          <div className="flex items-center gap-2">
-            {/* View Toggle */}
-            <div
-              className="flex items-center rounded-lg overflow-hidden"
-              style={{
-                border: "1px solid var(--color-linear-border-primary)",
-              }}
-            >
-              <button
-                onClick={() => setViewMode("grid")}
-                className="px-2 py-1.5 transition-colors"
-                style={{
-                  background:
-                    viewMode === "grid"
-                      ? "var(--color-linear-bg-tertiary)"
-                      : "transparent",
-                  color: "var(--color-linear-text-secondary)",
-                }}
-              >
-                <LayoutGridIcon className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className="px-2 py-1.5 transition-colors"
-                style={{
-                  background:
-                    viewMode === "list"
-                      ? "var(--color-linear-bg-tertiary)"
-                      : "transparent",
-                  color: "var(--color-linear-text-secondary)",
-                }}
-              >
-                <ListIcon className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Sort Button */}
-            <button
-              className="px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                border: "1px solid var(--color-linear-border-primary)",
-                color: "var(--color-linear-text-secondary)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "var(--color-linear-bg-tertiary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <ArrowUpDownIcon className="h-4 w-4" />
-            </button>
-
-            {/* Star Button */}
-            <button
-              className="px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                border: "1px solid var(--color-linear-border-primary)",
-                color: "var(--color-linear-text-secondary)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "var(--color-linear-bg-tertiary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <StarIcon className="h-4 w-4" />
-            </button>
-
-            {/* Recent Button */}
-            <button
-              className="px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                border: "1px solid var(--color-linear-border-primary)",
-                color: "var(--color-linear-text-secondary)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "var(--color-linear-bg-tertiary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <ClockIcon className="h-4 w-4" />
-            </button>
-
-            {/* Search Button */}
-            <button
-              className="px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                border: "1px solid var(--color-linear-border-primary)",
-                color: "var(--color-linear-text-secondary)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  "var(--color-linear-bg-tertiary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <SearchIcon className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Helper Text */}
-      <div className="px-6 py-4">
-        <p
-          className="text-xs text-center"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
+      <PageToolbar title={titleWithEmoji}>
+        <ToolbarButton
+          active={viewMode === "grid"}
+          onClick={() => setViewMode("grid")}
+          title="Grid view"
         >
-          Any documents you haven't moved into a specific folder will appear
-          here.
-        </p>
-      </div>
+          <LayoutGridIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          active={viewMode === "list"}
+          onClick={() => setViewMode("list")}
+          title="List view"
+        >
+          <ListIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton title="Sort">
+          <ArrowUpDownIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton title="Starred">
+          <StarIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton title="Recent">
+          <ClockIcon className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton title="Search">
+          <SearchIcon className="h-4 w-4" />
+        </ToolbarButton>
+      </PageToolbar>
 
-      {/* Content Table */}
-      <div className="px-6 pb-8">
-        <ContentTable
-          content={content}
-          emptyMessage={`No content in ${config.name} yet`}
-        />
+      {/* Content Area */}
+      <div className="flex-1 overflow-auto px-6 py-4">
+        {viewMode === "grid" ? (
+          <ContentGrid
+            content={content}
+            emptyMessage={`No content in ${folderName} yet`}
+          />
+        ) : (
+          <ContentTable
+            content={content}
+            emptyMessage={`No content in ${folderName} yet`}
+          />
+        )}
       </div>
     </div>
   );

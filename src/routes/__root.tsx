@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary";
 import { NotFound } from "~/components/NotFound";
 import { PageHeaderProvider } from "~/components/PageHeader";
+import { SearchModal, useSearchModal } from "~/components/SearchModal";
+import { ThemeProvider } from "~/components/ThemeProvider";
 import { seo } from "~/utils/seo";
 
 export const Route = createRootRoute({
@@ -44,9 +46,11 @@ function RootLayout() {
   const shouldShowSidebar = !noSidebarPaths.includes(location.pathname);
 
   return (
-    <RootDocument>
-      {shouldShowSidebar ? <LayoutWithSidebar /> : <Outlet />}
-    </RootDocument>
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <RootDocument>
+        {shouldShowSidebar ? <LayoutWithSidebar /> : <Outlet />}
+      </RootDocument>
+    </ThemeProvider>
   );
 }
 
@@ -166,12 +170,24 @@ function LayoutWithSidebar() {
   );
 }
 
+// Search Modal Context
+const SearchModalContext = React.createContext<{
+  open: () => void;
+} | null>(null);
+
+export function useSearchModalContext() {
+  return React.useContext(SearchModalContext);
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const searchModal = useSearchModal();
+
   return (
-    <>
+    <SearchModalContext.Provider value={{ open: searchModal.open }}>
       <HeadContent />
       {children}
+      <SearchModal isOpen={searchModal.isOpen} onClose={searchModal.close} />
       <TanStackRouterDevtools position="bottom-right" />
-    </>
+    </SearchModalContext.Provider>
   );
 }

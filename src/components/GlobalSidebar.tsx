@@ -12,6 +12,10 @@ import {
   ChevronRight,
   ChevronDown,
   PanelLeftClose,
+  Search,
+  Sun,
+  Moon,
+  Laptop,
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,14 +27,20 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarFooter,
   useSidebar,
 } from "~/components/ui/sidebar";
 import { cn } from "~/lib/utils";
+import { useTheme } from "~/components/ThemeProvider";
+import { useSearchModalContext } from "~/routes/__root";
 import styles from "./GlobalSidebar.module.css";
+
 export function GlobalSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toggleSidebar } = useSidebar();
+  const searchModal = useSearchModalContext();
+  const { theme, setTheme } = useTheme();
   const [foldersExpanded, setFoldersExpanded] = React.useState(true);
   const [tagsExpanded, setTagsExpanded] = React.useState(false);
 
@@ -80,6 +90,21 @@ export function GlobalSidebar() {
           <Plus />
           <span>New Document</span>
         </motion.button>
+
+        {/* Search - Added back based on user request */}
+        <div
+          className={styles.searchContainer}
+          style={{ display: "block", marginTop: "0.5rem" }}
+        >
+          <button
+            onClick={() => searchModal?.open()}
+            className={styles.searchButton}
+          >
+            <Search className="h-4 w-4" />
+            <span>Search</span>
+            <kbd>⌘K</kbd>
+          </button>
+        </div>
       </SidebarHeader>
 
       <SidebarContent className={styles.content}>
@@ -131,7 +156,7 @@ export function GlobalSidebar() {
             onClick={() => setFoldersExpanded(!foldersExpanded)}
             className={cn(
               styles.sectionHeader,
-              foldersExpanded && styles.expanded,
+              foldersExpanded && styles.expanded
             )}
             whileHover={{ x: 2 }}
           >
@@ -224,7 +249,7 @@ export function GlobalSidebar() {
             onClick={() => setTagsExpanded(!tagsExpanded)}
             className={cn(
               styles.sectionHeader,
-              tagsExpanded && styles.expanded,
+              tagsExpanded && styles.expanded
             )}
             whileHover={{ x: 2 }}
           >
@@ -247,6 +272,36 @@ export function GlobalSidebar() {
           </AnimatePresence>
         </div>
       </SidebarContent>
+
+      <SidebarFooter className={styles.footer}>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => {
+                if (theme === "light") setTheme("dark");
+                else if (theme === "dark") setTheme("system");
+                else setTheme("light");
+              }}
+              tooltip="Toggle theme"
+            >
+              {theme === "light" ? (
+                <Sun className="h-4 w-4" />
+              ) : theme === "dark" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Laptop className="h-4 w-4" />
+              )}
+              <span>
+                {theme === "light"
+                  ? "Light Mode"
+                  : theme === "dark"
+                    ? "Dark Mode"
+                    : "System Theme"}
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

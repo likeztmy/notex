@@ -1,9 +1,6 @@
-export { CanvasEditor } from "./CanvasEditor";
-export { BlockRenderer } from "./BlockRenderer";
-export { BlockPicker } from "./BlockPicker";
 export { BaseBlock } from "./BaseBlock";
 
-// Individual block components
+// Individual block components (used by editor extensions)
 export { TasksBlock } from "./TasksBlock";
 export { HabitsBlock } from "./HabitsBlock";
 export { ChartBlock } from "./ChartBlock";

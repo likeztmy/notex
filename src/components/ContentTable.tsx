@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileTextIcon,
@@ -8,9 +8,17 @@ import {
   TrashIcon,
   CopyIcon,
   TagIcon,
+  FolderIcon,
+  ArrowDownIcon,
 } from "lucide-react";
 import type { Content } from "~/types/content";
-import { deleteContent, toggleStarred } from "~/utils/contentStorage";
+import {
+  deleteContent,
+  toggleStarred,
+  duplicateContent,
+} from "~/utils/contentStorage";
+import { MoveToFolderDialog } from "./MoveToFolderDialog";
+import { TagDialog } from "./TagInput";
 import { cn } from "~/lib/utils";
 import styles from "./ContentTable.module.css";
 
@@ -36,15 +44,8 @@ export function ContentTable({
     );
   }
 
-  // Sort by last viewed, then by updated date
-  const sortedContent = [...content].sort((a, b) => {
-    if (a.lastViewed && b.lastViewed) {
-      return b.lastViewed - a.lastViewed;
-    }
-    if (a.lastViewed) return -1;
-    if (b.lastViewed) return 1;
-    return b.updatedAt - a.updatedAt;
-  });
+  // Use content directly as it is already sorted by the parent
+  const sortedContent = content;
 
   return (
     <div className={styles.tableWrapper}>
@@ -57,7 +58,9 @@ export function ContentTable({
       >
         <div className={styles.colName}>Name</div>
         <div className={styles.colLastViewed}>Last Viewed</div>
-        <div className={styles.colUpdated}>Updated</div>
+        <div className={styles.colUpdated}>
+          Updated <ArrowDownIcon className="h-3 w-3" />
+        </div>
         <div className={styles.colCreated}>Created</div>
         <div className={styles.colActions}></div>
       </motion.div>
@@ -82,21 +85,24 @@ interface ContentTableRowProps {
 }
 
 function ContentTableRow({ content, index }: ContentTableRowProps) {
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = React.useState(false);
   const [showActions, setShowActions] = React.useState(false);
+  const [showMoveDialog, setShowMoveDialog] = React.useState(false);
+  const [showTagDialog, setShowTagDialog] = React.useState(false);
 
   const preview = getContentPreview(content);
   const lastViewedDate = content.lastViewed
-    ? formatDate(content.lastViewed)
+    ? formatRelativeTime(content.lastViewed)
     : "-";
-  const updatedDate = formatDate(content.updatedAt);
-  const createdDate = formatDate(content.createdAt);
+  const updatedDate = formatRelativeTime(content.updatedAt);
+  const createdDate = formatRelativeTime(content.createdAt);
 
   const handleToggleStar = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleStarred(content.id);
-    window.location.reload(); // Refresh to show updated star status
+    window.location.reload();
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -104,136 +110,185 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this document?")) {
       deleteContent(content.id);
-      window.location.reload(); // Refresh to show updated list
+      window.location.reload();
     }
   };
 
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const duplicate = duplicateContent(content.id);
+    if (duplicate) {
+      navigate({ to: "/editor", search: { id: duplicate.id } });
+    }
+    setShowActions(false);
+  };
+
+  const handleMoveToFolder = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMoveDialog(true);
+    setShowActions(false);
+  };
+
+  const handleManageTags = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowTagDialog(true);
+    setShowActions(false);
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.3,
-        delay: index * 0.05,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-    >
-      <Link
-        to="/editor"
-        search={{ id: content.id }}
-        className={styles.tableRow}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.3,
+          delay: index * 0.05,
+          ease: [0.22, 1, 0.36, 1],
+        }}
       >
-        {/* Name Column */}
-        <div className={styles.nameColumn}>
-          <motion.div className={styles.fileIcon} whileHover={{ scale: 1.05 }}>
-            <FileTextIcon className="h-4 w-4" />
-          </motion.div>
-          <div className={styles.fileInfo}>
-            <div className={styles.fileName}>{content.title || "Untitled"}</div>
-            <div className={styles.filePreview}>
-              <span className={styles.previewText}>{preview}</span>
-              {content.tags && content.tags.length > 0 && (
-                <div className={styles.tags}>
-                  {content.tags.slice(0, 2).map((tag) => (
-                    <motion.span
-                      key={tag}
-                      className={styles.tag}
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      <TagIcon />
-                      {tag}
-                    </motion.span>
-                  ))}
-                  {content.tags.length > 2 && (
-                    <span className={styles.tagCount}>
-                      +{content.tags.length - 2}
-                    </span>
-                  )}
-                </div>
-              )}
+        <Link
+          to="/editor"
+          search={{ id: content.id }}
+          className={styles.tableRow}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => {
+            setIsHovered(false);
+            if (!showMoveDialog && !showTagDialog) {
+              setShowActions(false);
+            }
+          }}
+        >
+          <div className={styles.nameColumn}>
+            <div className={styles.fileIcon}>
+              {/* <FileTextIcon className="h-4 w-4" /> - Removed in favor of CSS styling */}
+            </div>
+            <div className={styles.fileInfo}>
+              <div className={styles.fileName}>
+                {content.title || "Untitled"}
+              </div>
+              <div className={styles.filePreview}>{preview}</div>
             </div>
           </div>
-        </div>
 
-        {/* Last Viewed Column */}
-        <div className={cn(styles.dateColumn, styles.colLastViewed)}>
-          {lastViewedDate}
-        </div>
+          {/* Last Viewed Column */}
+          <div className={cn(styles.dateColumn, styles.colLastViewed)}>
+            {lastViewedDate}
+          </div>
 
-        {/* Updated Column */}
-        <div className={cn(styles.dateColumn, styles.colUpdated)}>
-          {updatedDate}
-        </div>
+          {/* Updated Column */}
+          <div className={cn(styles.dateColumn, styles.colUpdated)}>
+            {updatedDate}
+          </div>
 
-        {/* Created Column */}
-        <div className={cn(styles.dateColumn, styles.colCreated)}>
-          {createdDate}
-        </div>
+          {/* Created Column */}
+          <div className={cn(styles.dateColumn, styles.colCreated)}>
+            {createdDate}
+          </div>
 
-        {/* Actions Column */}
-        <div className={styles.actionsColumn}>
-          <motion.button
-            onClick={handleToggleStar}
-            className={cn(styles.starButton, content.starred && styles.starred)}
-            style={{
-              opacity: content.starred || isHovered ? 1 : 0,
-            }}
-            title={content.starred ? "Unstar" : "Star"}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <StarIcon className="h-3.5 w-3.5" />
-          </motion.button>
-          <div style={{ position: "relative" }}>
+          {/* Actions Column */}
+          <div className={styles.actionsColumn}>
             <motion.button
-              className={styles.moreButton}
-              style={{
-                opacity: isHovered ? 1 : 0,
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowActions(!showActions);
-              }}
+              onClick={handleToggleStar}
+              className={cn(
+                styles.starButton,
+                content.starred && styles.starred
+              )}
+              title={content.starred ? "Unstar" : "Star"}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <MoreHorizontalIcon className="h-4 w-4" />
+              <StarIcon className="h-4 w-4" />
             </motion.button>
-            <AnimatePresence>
-              {showActions && (
-                <motion.div
-                  className={styles.actionsMenu}
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <motion.button
-                    onClick={handleToggleStar}
-                    className={styles.menuButton}
-                    whileHover={{ x: 2 }}
+            <div style={{ position: "relative" }}>
+              <motion.button
+                className={styles.moreButton}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowActions(!showActions);
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </motion.button>
+              <AnimatePresence>
+                {showActions && (
+                  <motion.div
+                    className={styles.actionsMenu}
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    <StarIcon />
-                    {content.starred ? "Unstar" : "Star"}
-                  </motion.button>
-                  <motion.button
-                    onClick={handleDelete}
-                    className={cn(styles.menuButton, styles.delete)}
-                    whileHover={{ x: 2 }}
-                  >
-                    <TrashIcon />
-                    Delete
-                  </motion.button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <motion.button
+                      onClick={handleToggleStar}
+                      className={styles.menuButton}
+                      whileHover={{ x: 2 }}
+                    >
+                      <StarIcon />
+                      {content.starred ? "Unstar" : "Star"}
+                    </motion.button>
+                    <motion.button
+                      onClick={handleDuplicate}
+                      className={styles.menuButton}
+                      whileHover={{ x: 2 }}
+                    >
+                      <CopyIcon />
+                      Duplicate
+                    </motion.button>
+                    <motion.button
+                      onClick={handleMoveToFolder}
+                      className={styles.menuButton}
+                      whileHover={{ x: 2 }}
+                    >
+                      <FolderIcon />
+                      Move to Folder
+                    </motion.button>
+                    <motion.button
+                      onClick={handleManageTags}
+                      className={styles.menuButton}
+                      whileHover={{ x: 2 }}
+                    >
+                      <TagIcon />
+                      Manage Tags
+                    </motion.button>
+                    <motion.button
+                      onClick={handleDelete}
+                      className={cn(styles.menuButton, styles.delete)}
+                      whileHover={{ x: 2 }}
+                    >
+                      <TrashIcon />
+                      Delete
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      </Link>
-    </motion.div>
+        </Link>
+      </motion.div>
+
+      {/* Dialogs */}
+      <MoveToFolderDialog
+        isOpen={showMoveDialog}
+        onClose={() => setShowMoveDialog(false)}
+        contentId={content.id}
+        currentFolderId={content.folderId}
+        onMoved={() => window.location.reload()}
+      />
+
+      <TagDialog
+        isOpen={showTagDialog}
+        onClose={() => setShowTagDialog(false)}
+        contentId={content.id}
+        currentTags={content.tags}
+        onTagsChange={() => window.location.reload()}
+      />
+    </>
   );
 }
 
@@ -250,36 +305,48 @@ function getContentPreview(content: Content): string {
       };
       const text = extractText(content.docContent).trim();
       const preview = text.slice(0, 100);
-      return preview || "Empty document";
+      return preview || "No additional text";
     } catch {
-      return "Empty document";
+      return "No additional text";
     }
   }
 
-  return "No content";
+  return "No additional text";
 }
 
-// Helper: Format date to Chinese style
-function formatDate(timestamp: number): string {
+// Helper: Format relative time
+function formatRelativeTime(timestamp: number): string {
   const date = new Date(timestamp);
   const now = new Date();
-  const diffInDays = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  // Show relative time for recent dates
-  if (diffInDays === 0) return "今天";
-  if (diffInDays === 1) return "昨天";
-  if (diffInDays < 7) return `${diffInDays}天前`;
+  if (diffInSeconds < 60) return "Just Now";
 
-  // Format as Chinese date
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const year = date.getFullYear();
-  const currentYear = now.getFullYear();
-
-  if (year === currentYear) {
-    return `${month}月${day}日`;
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
   }
-  return `${year}年${month}月${day}日`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  }
+
+  if (diffInDays < 30) {
+    const weeks = Math.floor(diffInDays / 7);
+    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+  }
+
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) {
+    return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
+  }
+
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
 }

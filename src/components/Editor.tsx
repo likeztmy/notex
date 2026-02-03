@@ -83,7 +83,7 @@ function EditorClient({
           Markdown,
           lowlight,
         });
-      },
+      }
     );
   }, [documentId, createNew, navigate]);
 
@@ -91,18 +91,18 @@ function EditorClient({
     (id: string, updates: Partial<Content>) => {
       updateContent(id, updates);
       setCurrentDoc((prev) =>
-        prev ? { ...prev, ...updates, updatedAt: Date.now() } : null,
+        prev ? { ...prev, ...updates, updatedAt: Date.now() } : null
       );
       setLastSaved(new Date());
     },
-    [],
+    []
   );
 
   if (!Editor || !currentDoc) {
     return (
       <div
         className="h-full flex items-center justify-center"
-        style={{ background: "white" }}
+        style={{ background: "var(--color-linear-bg-primary)" }}
       >
         <div
           className="text-sm animate-pulse"
@@ -169,7 +169,7 @@ function EditorInner({
   const onRunCommandRef = React.useRef<((index: number) => void) | null>(null);
   const slashHandlerRefs = React.useMemo(
     () => ({ onRunCommand: onRunCommandRef }),
-    [],
+    []
   );
 
   const editor = useEditor({
@@ -249,7 +249,7 @@ function EditorInner({
               right: coords.left,
               bottom: coords.top,
             },
-            { toJSON: () => ({}) },
+            { toJSON: () => ({}) }
           ) as DOMRect,
       });
     };
@@ -289,12 +289,12 @@ function EditorInner({
 
   const blockCommands = React.useMemo(
     () => buildBlockCommands(editor, closeSlashMenu),
-    [editor, closeSlashMenu],
+    [editor, closeSlashMenu]
   );
 
   const filteredCommands = React.useMemo(
     () => filterBlockCommands(blockCommands, slashState.searchQuery),
-    [blockCommands, slashState.searchQuery],
+    [blockCommands, slashState.searchQuery]
   );
 
   React.useEffect(() => {
@@ -319,12 +319,12 @@ function EditorInner({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        prev >= filteredCommands.length - 1 ? 0 : prev + 1,
+        prev >= filteredCommands.length - 1 ? 0 : prev + 1
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((prev) =>
-        prev === 0 ? filteredCommands.length - 1 : prev - 1,
+        prev === 0 ? filteredCommands.length - 1 : prev - 1
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -341,18 +341,24 @@ function EditorInner({
   const styleVars = getStyleVars(styleConfig);
 
   return (
-    <div className="h-full flex flex-col relative" style={{ background: "white" }}>
+    <div
+      className="h-full flex flex-col relative"
+      style={{ background: "var(--color-linear-bg-primary)" }}
+    >
       {/* Floating Style Button */}
       <button
         onClick={() => setShowStylePanel(true)}
         className="fixed top-6 right-6 z-40 p-3 rounded-lg shadow-lg transition-all hover:scale-105"
         style={{
-          background: "white",
+          background: "var(--color-linear-bg-elevated)",
           border: "1px solid var(--color-linear-border-primary)",
         }}
         title="Document Style"
       >
-        <Palette className="w-5 h-5" style={{ color: "var(--color-linear-text-secondary)" }} />
+        <Palette
+          className="w-5 h-5"
+          style={{ color: "var(--color-linear-text-secondary)" }}
+        />
       </button>
 
       {slashState.show && editor && slashState.referenceElement && (
@@ -430,7 +436,7 @@ export function Editor({
     return (
       <div
         className="h-full flex items-center justify-center"
-        style={{ background: "white" }}
+        style={{ background: "var(--color-linear-bg-primary)" }}
       >
         <div
           className="text-sm animate-pulse"

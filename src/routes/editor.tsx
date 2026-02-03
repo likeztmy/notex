@@ -7,37 +7,29 @@ import {
 } from "~/utils/contentStorage";
 import type { Content } from "~/types/content";
 
-// Import editor components
+// Import editor component
 const DocEditor = React.lazy(() =>
-  import("~/components/Editor").then((mod) => ({ default: mod.Editor })),
-);
-
-const CanvasEditorWrapper = React.lazy(() =>
-  import("~/components/CanvasEditorWrapper").then((mod) => ({
-    default: mod.CanvasEditorWrapper,
-  })),
+  import("~/components/Editor").then((mod) => ({ default: mod.Editor }))
 );
 
 export const Route = createFileRoute("/editor")({
   component: EditorPage,
   validateSearch: (
-    search: Record<string, unknown>,
+    search: Record<string, unknown>
   ): {
     id?: string;
     create?: string;
-    mode?: "doc" | "canvas";
   } => {
     return {
       id: typeof search.id === "string" ? search.id : undefined,
       create:
         search.create === "true" || search.create === true ? "true" : undefined,
-      mode: search.mode === "canvas" ? "canvas" : "doc",
     };
   },
 });
 
 function EditorPage() {
-  const { id, create, mode } = Route.useSearch();
+  const { id, create } = Route.useSearch();
   const navigate = useNavigate();
   const isCreating = create === "true";
   const [content, setContent] = React.useState<Content | null>(null);
@@ -55,8 +47,8 @@ function EditorPage() {
         navigate({ to: "/content" });
       }
     } else if (isCreating) {
-      // Create new document immediately with specified mode
-      const newContent = createNewContent("", mode || "doc");
+      // Create new document
+      const newContent = createNewContent("");
       setContent(newContent);
       // Update URL with new content ID
       navigate({
@@ -68,7 +60,7 @@ function EditorPage() {
       // No ID and not creating, redirect
       navigate({ to: "/content" });
     }
-  }, [id, isCreating, mode, navigate]);
+  }, [id, isCreating, navigate]);
 
   // Show loading while content is being prepared
   if (!content) {
@@ -87,7 +79,7 @@ function EditorPage() {
     );
   }
 
-  // Render appropriate editor based on content mode
+  // Render editor
   return (
     <React.Suspense
       fallback={
@@ -104,11 +96,7 @@ function EditorPage() {
         </div>
       }
     >
-      {content.mode === "canvas" ? (
-        <CanvasEditorWrapper documentId={content.id} />
-      ) : (
-        <DocEditor documentId={content.id} createNew={false} />
-      )}
+      <DocEditor documentId={content.id} createNew={false} />
     </React.Suspense>
   );
 }
