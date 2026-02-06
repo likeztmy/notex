@@ -3,9 +3,9 @@
 /* CSS Variables for dynamic styling */
 :root {
   /* Font Family Variables */
-  --editor-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --editor-font-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --editor-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --editor-font-sans: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --editor-font-serif: "Iowan Old Style", "Palatino", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --editor-font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
   /* Font Size Variables */
   --editor-font-size-small: 14px;
@@ -29,6 +29,14 @@
   font-family: var(--editor-font-family, var(--editor-font-sans));
 }
 
+.ProseMirror ::selection {
+  background: rgba(26, 26, 26, 0.12);
+}
+
+.ProseMirror ::-moz-selection {
+  background: rgba(26, 26, 26, 0.12);
+}
+
 .ProseMirror:focus {
   outline: none;
 }
@@ -40,7 +48,7 @@
 
 /* Typography - Minimalist style */
 .ProseMirror h1 {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 500;
   line-height: 1.3;
   margin-top: 2rem;
@@ -50,7 +58,7 @@
 }
 
 .ProseMirror h2 {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 500;
   line-height: 1.4;
   margin-top: 1.75rem;
@@ -60,7 +68,7 @@
 }
 
 .ProseMirror h3 {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 500;
   line-height: 1.45;
   margin-top: 1.5rem;
@@ -77,10 +85,10 @@
 
 .ProseMirror p {
   font-size: 1rem;
-  line-height: 1.6;
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-  color: var(--color-linear-text-secondary);
+  line-height: inherit;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  color: var(--color-linear-text-primary);
   text-align: var(--editor-text-align, left);
 }
 
@@ -101,8 +109,8 @@
 .ProseMirror ul,
 .ProseMirror ol {
   padding-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
 }
 
 .ProseMirror ul {
@@ -116,8 +124,8 @@
 .ProseMirror li {
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
-  line-height: 1.65;
-  color: var(--color-linear-text-secondary);
+  line-height: inherit;
+  color: var(--color-linear-text-primary);
   text-align: var(--editor-text-align, left);
 }
 
@@ -146,8 +154,8 @@
   border-left: 2px solid var(--color-linear-border-primary);
   padding-left: 1rem;
   margin-left: 0;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  margin-top: 1.1rem;
+  margin-bottom: 1.1rem;
   font-style: normal;
   color: var(--color-linear-text-secondary);
   text-align: var(--editor-text-align, left);
@@ -193,7 +201,7 @@
   border: none;
   height: 1px;
   background: var(--color-linear-border-primary);
-  margin: 1.5rem 0;
+  margin: 1.75rem 0;
 }
 
 /* Strong and Emphasis */
@@ -224,7 +232,7 @@
 
 /* Ensure proper spacing */
 .ProseMirror > * + * {
-  margin-top: 0.5rem;
+  margin-top: 0.65rem;
 }
 
 /* Hard Break */
@@ -492,16 +500,20 @@
   transition: font-family 0.2s ease, font-size 0.2s ease, line-height 0.2s ease;
 }
 
+@import "highlight.js/styles/github-dark.css";
+
 /* ============================================
    TipTap NodeView Styles for Advanced Blocks
    ============================================ */
 
 /* NodeView wrapper styling */
 .tiptap-block-wrapper {
-  margin: 1rem 0;
+  margin: 1.25rem 0;
   position: relative;
-  border-radius: 8px;
-  transition: outline 0.15s ease;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tiptap-block-wrapper:first-child {
@@ -510,9 +522,9 @@
 
 /* Selection styling for blocks */
 .ProseMirror-selectednode .tiptap-block-wrapper {
-  outline: 2px solid var(--color-linear-accent-primary);
-  outline-offset: 2px;
-  border-radius: 8px;
+  border-color: var(--color-linear-accent-primary);
+  background: var(--color-linear-bg-secondary);
+  box-shadow: var(--shadow-linear-sm);
 }
 
 /* Drag handle visual feedback */
@@ -531,12 +543,159 @@
 
 /* Block hover effect - subtle highlight */
 .tiptap-block-wrapper:hover {
-  outline: 1px solid var(--color-linear-border-primary);
-  outline-offset: 2px;
+  border-color: var(--color-linear-border-primary);
+  background: var(--color-linear-bg-secondary);
 }
 
 .ProseMirror-selectednode .tiptap-block-wrapper:hover {
-  outline: 2px solid var(--color-linear-accent-primary);
+  border-color: var(--color-linear-accent-primary);
+}
+
+.tiptap-block-wrapper::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 18px;
+  width: 6px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-linear-border-primary),
+    var(--color-linear-text-tertiary)
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tiptap-drag-handle,
+.drag-handle {
+  width: 22px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--color-linear-border-primary);
+  background: var(--color-linear-bg-elevated);
+  color: var(--color-linear-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  letter-spacing: 2px;
+  box-shadow: var(--shadow-linear-sm);
+  cursor: grab;
+  opacity: 0.15;
+  transform: translateY(2px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.tiptap-drag-handle:hover,
+.drag-handle:hover {
+  color: var(--color-linear-text-primary);
+  opacity: 0.9;
+}
+
+.ProseMirror:hover .tiptap-drag-handle,
+.ProseMirror:hover .drag-handle,
+.ProseMirror-focused .tiptap-drag-handle,
+.ProseMirror-focused .drag-handle {
+  opacity: 0.6;
+  transform: translateY(0);
+}
+
+.tiptap-block-wrapper:hover::before {
+  opacity: 0.5;
+}
+
+.ProseMirror-selectednode .tiptap-block-wrapper::before {
+  opacity: 0.8;
+}
+
+.tiptap-block-wrapper[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-linear-bg-elevated);
+  border: 1px solid var(--color-linear-border-primary);
+  color: var(--color-linear-text-tertiary);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tiptap-block-wrapper[data-label]:hover::after,
+.ProseMirror-selectednode .tiptap-block-wrapper[data-label]::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tiptap-block-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: inline-flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.tiptap-block-wrapper:hover .tiptap-block-toolbar,
+.ProseMirror-selectednode .tiptap-block-toolbar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tiptap-block-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--color-linear-border-primary);
+  background: var(--color-linear-bg-elevated);
+  color: var(--color-linear-text-secondary);
+  box-shadow: var(--shadow-linear-sm);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.tiptap-block-toolbar button:hover {
+  color: var(--color-linear-text-primary);
+  border-color: var(--color-linear-accent-primary);
+}
+
+.tiptap-block-wrapper input:focus,
+.tiptap-block-wrapper textarea:focus,
+.tiptap-block-wrapper select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.08);
+  border-radius: 6px;
+}
+
+.tiptap-block-wrapper input,
+.tiptap-block-wrapper textarea,
+.tiptap-block-wrapper select {
+  font-family: var(--editor-font-family, var(--editor-font-sans));
+  color: var(--color-linear-text-primary);
+}
+
+.tiptap-block-wrapper .block-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-linear-text-tertiary);
+}
+
+.tiptap-block-wrapper input::placeholder,
+.tiptap-block-wrapper textarea::placeholder {
+  color: var(--color-linear-text-tertiary);
 }
 
 /* Ensure blocks don't inherit prose styles that might conflict */
@@ -568,6 +727,8 @@
 /* Callout block within TipTap */
 .tiptap-block-wrapper[data-type="callout-block"] {
   margin: 1.5rem 0;
+  background: transparent;
+  border-color: transparent;
 }
 
 /* Embed block iframe container */

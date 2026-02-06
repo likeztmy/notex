@@ -137,6 +137,7 @@ export interface CodeBlock extends BaseBlock {
   code: string;
   title?: string;
   showLineNumbers?: boolean;
+  wrapLines?: boolean;
 }
 
 /**
@@ -277,6 +278,7 @@ export function createBlock(type: BlockType, data?: Partial<Block>): Block {
         language: "javascript",
         code: "",
         showLineNumbers: true,
+        wrapLines: false,
       } as CodeBlock;
     case "card":
       return {

@@ -4,11 +4,12 @@ import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import "./styles/app.css";
 import "./styles/editor.css";
+import "highlight.js/styles/github-dark.css";
 
 const router = getRouter();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RouterProvider router={router} />
-  </StrictMode>,
+  </StrictMode>
 );

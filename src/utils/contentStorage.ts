@@ -1,13 +1,19 @@
 import {
   Content,
+  AuthorProfile,
   createContent,
   Folder,
   createFolder,
   DEFAULT_FOLDERS,
+  Series,
+  createSeries,
 } from "~/types/content";
+import { extractPlainText } from "~/utils/contentText";
 
 const CONTENT_KEY = "notex-content";
 const FOLDERS_KEY = "notex-folders";
+const SERIES_KEY = "notex-series";
+const PROFILE_KEY = "notex-profile";
 const LEGACY_DOCS_KEY = "notex-documents";
 
 // Legacy document type for migration
@@ -27,7 +33,8 @@ export function loadContent(): Content[] {
   const saved = localStorage.getItem(CONTENT_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved) as Content[];
+      return mergeLegacyDocuments(parsed).map(normalizeContent);
     } catch (e) {
       console.error("Failed to parse saved content:", e);
       return [];
@@ -35,13 +42,54 @@ export function loadContent(): Content[] {
   }
 
   // Try to migrate legacy documents
-  return migrateLegacyDocuments();
+  return migrateLegacyDocuments().map(normalizeContent);
 }
 
 // Save all content to localStorage
-export function saveContent(content: Content[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(CONTENT_KEY, JSON.stringify(content));
+export function saveContent(content: Content[]): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    localStorage.setItem(CONTENT_KEY, JSON.stringify(content));
+    return true;
+  } catch (e) {
+    console.error("Failed to save content:", e);
+    return false;
+  }
+}
+
+export function loadProfile(): AuthorProfile {
+  if (typeof window === "undefined") {
+    return getDefaultProfile();
+  }
+  const saved = localStorage.getItem(PROFILE_KEY);
+  if (saved) {
+    try {
+      return normalizeProfile(JSON.parse(saved) as AuthorProfile);
+    } catch (e) {
+      console.error("Failed to parse saved profile:", e);
+    }
+  }
+  const fallback = getDefaultProfile();
+  saveProfile(fallback);
+  return fallback;
+}
+
+export function saveProfile(profile: AuthorProfile): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    return true;
+  } catch (e) {
+    console.error("Failed to save profile:", e);
+    return false;
+  }
+}
+
+export function updateProfile(updates: Partial<AuthorProfile>): AuthorProfile {
+  const current = loadProfile();
+  const next = normalizeProfile({ ...current, ...updates });
+  saveProfile(next);
+  return next;
 }
 
 // Get single content item by ID
@@ -53,18 +101,56 @@ export function getContentById(id: string): Content | undefined {
 export function createNewContent(title: string = ""): Content {
   const content = createContent(title);
   const allContent = loadContent();
-  allContent.push(content);
-  saveContent(allContent);
+  const next = [...allContent, normalizeContent(content)];
+  saveContent(next);
   return content;
 }
 
 // Update content
-export function updateContent(id: string, updates: Partial<Content>) {
+export function updateContent(id: string, updates: Partial<Content>): boolean {
   const allContent = loadContent();
   const updated = allContent.map((c) =>
-    c.id === id ? { ...c, ...updates, updatedAt: Date.now() } : c
+    c.id === id
+      ? normalizeContent({ ...c, ...updates, updatedAt: Date.now() })
+      : c
   );
-  saveContent(updated);
+  return saveContent(updated);
+}
+
+export function updatePublicStats(
+  id: string,
+  updates: Partial<Content["publicStats"]>
+) {
+  const allContent = loadContent();
+  const updated = allContent.map((c) => {
+    if (c.id !== id) return c;
+    const existingStats = c.publicStats || { views: 0 };
+    const nextViews = updates.views ?? existingStats.views ?? 0;
+    const previousViews = existingStats.views ?? 0;
+    const deltaViews = Math.max(0, nextViews - previousViews);
+    const timestamp = updates.lastViewedAt || Date.now();
+    const dayKey = getDayKey(timestamp);
+    const dailyViews = {
+      ...(existingStats.dailyViews || {}),
+    };
+    if (deltaViews > 0) {
+      dailyViews[dayKey] = (dailyViews[dayKey] || 0) + deltaViews;
+    }
+
+    const nextStats = {
+      ...existingStats,
+      ...updates,
+      views: nextViews,
+      dailyViews,
+      reads7d: calculateReads7d(dailyViews, timestamp),
+    };
+
+    return normalizeContent({
+      ...c,
+      publicStats: nextStats,
+    });
+  });
+  return saveContent(updated);
 }
 
 // Delete content
@@ -72,6 +158,14 @@ export function deleteContent(id: string) {
   const allContent = loadContent();
   const filtered = allContent.filter((c) => c.id !== id);
   saveContent(filtered);
+  const allSeries = loadSeries();
+  if (allSeries.length > 0) {
+    const updatedSeries = allSeries.map((s) => ({
+      ...s,
+      contentIds: s.contentIds.filter((contentId) => contentId !== id),
+    }));
+    saveSeries(updatedSeries);
+  }
 }
 
 // Toggle starred
@@ -131,29 +225,134 @@ function migrateLegacyDocuments(): Content[] {
     const legacyDocs: LegacyDocument[] = JSON.parse(legacyData);
 
     // Convert to new Content format
-    const migratedContent: Content[] = legacyDocs.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      mode: "doc",
-      docContent: doc.content,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      lastViewed: doc.lastViewed,
-    }));
+    const migratedContent: Content[] = legacyDocs.map(convertLegacyDocument);
 
     // Save migrated content
     saveContent(migratedContent);
 
-    // Keep legacy data for safety (don't delete yet)
-    console.log(
-      `✅ Migrated ${migratedContent.length} documents to new format`
-    );
+    // Clean up legacy data after successful migration
+    localStorage.removeItem(LEGACY_DOCS_KEY);
+    console.log(`Migrated ${migratedContent.length} documents to new format`);
 
     return migratedContent;
   } catch (e) {
     console.error("Failed to migrate legacy documents:", e);
     return [];
   }
+}
+
+function mergeLegacyDocuments(currentContent: Content[]): Content[] {
+  if (typeof window === "undefined") return currentContent;
+
+  const legacyData = localStorage.getItem(LEGACY_DOCS_KEY);
+  if (!legacyData) return currentContent;
+
+  try {
+    const legacyDocs: LegacyDocument[] = JSON.parse(legacyData);
+    const existingIds = new Set(currentContent.map((doc) => doc.id));
+    const newDocs = legacyDocs
+      .filter((doc) => !existingIds.has(doc.id))
+      .map(convertLegacyDocument);
+
+    if (newDocs.length === 0) {
+      localStorage.removeItem(LEGACY_DOCS_KEY);
+      return currentContent;
+    }
+
+    const merged = [...currentContent, ...newDocs];
+    saveContent(merged);
+    localStorage.removeItem(LEGACY_DOCS_KEY);
+    console.log(`Migrated ${newDocs.length} legacy documents`);
+    return merged;
+  } catch (e) {
+    console.error("Failed to merge legacy documents:", e);
+    return currentContent;
+  }
+}
+
+function convertLegacyDocument(doc: LegacyDocument): Content {
+  return {
+    id: doc.id,
+    title: doc.title,
+    mode: "doc",
+    docContent: doc.content,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    lastViewed: doc.lastViewed,
+    publish: {
+      isPublic: false,
+      theme: "minimal",
+    },
+    publicStats: {
+      views: 0,
+      reads7d: 0,
+      dailyViews: {},
+    },
+  };
+}
+
+function normalizeContent(content: Content): Content {
+  return {
+    ...content,
+    publish: {
+      isPublic: content.publish?.isPublic ?? false,
+      theme: content.publish?.theme ?? "minimal",
+      slug: content.publish?.slug,
+      description: content.publish?.description,
+      ogImage: content.publish?.ogImage,
+    },
+    publicStats: {
+      views: content.publicStats?.views ?? 0,
+      lastViewedAt: content.publicStats?.lastViewedAt,
+      firstPublishedAt: content.publicStats?.firstPublishedAt,
+      lastPublishedAt: content.publicStats?.lastPublishedAt,
+      reads7d: content.publicStats?.reads7d ?? 0,
+      dailyViews: content.publicStats?.dailyViews || {},
+    },
+  };
+}
+
+function getDefaultProfile(): AuthorProfile {
+  return {
+    displayName: "Notex Author",
+    headline: "Design-first publishing notebook",
+    bio: "",
+    avatarUrl: "",
+    website: "",
+    featuredContentIds: [],
+    featuredSeriesIds: [],
+  };
+}
+
+function normalizeProfile(profile: AuthorProfile): AuthorProfile {
+  return {
+    displayName: profile.displayName || "Notex Author",
+    headline: profile.headline || "",
+    bio: profile.bio || "",
+    avatarUrl: profile.avatarUrl || "",
+    website: profile.website || "",
+    featuredContentIds: profile.featuredContentIds || [],
+    featuredSeriesIds: profile.featuredSeriesIds || [],
+  };
+}
+
+function getDayKey(timestamp: number): string {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function calculateReads7d(
+  dailyViews: Record<string, number>,
+  timestamp: number
+): number {
+  const current = new Date(timestamp);
+  let total = 0;
+  for (let i = 0; i < 7; i += 1) {
+    const date = new Date(current);
+    date.setUTCDate(current.getUTCDate() - i);
+    const key = date.toISOString().slice(0, 10);
+    total += dailyViews[key] || 0;
+  }
+  return total;
 }
 
 // Export for manual migration trigger
@@ -235,6 +434,56 @@ export function deleteFolder(id: string) {
   saveFolders(filtered);
 }
 
+// ============================================
+// SERIES MANAGEMENT
+// ============================================
+
+export function loadSeries(): Series[] {
+  if (typeof window === "undefined") return [];
+  const saved = localStorage.getItem(SERIES_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved) as Series[];
+    } catch (e) {
+      console.error("Failed to parse saved series:", e);
+      return [];
+    }
+  }
+  return [];
+}
+
+export function saveSeries(series: Series[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SERIES_KEY, JSON.stringify(series));
+}
+
+export function createNewSeries(title: string, description?: string): Series {
+  const series = createSeries(title, description);
+  const allSeries = loadSeries();
+  allSeries.push(series);
+  saveSeries(allSeries);
+  return series;
+}
+
+export function updateSeries(id: string, updates: Partial<Series>) {
+  const allSeries = loadSeries();
+  const updated = allSeries.map((s) =>
+    s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s
+  );
+  saveSeries(updated);
+}
+
+export function deleteSeries(id: string) {
+  const allSeries = loadSeries();
+  const filtered = allSeries.filter((s) => s.id !== id);
+  saveSeries(filtered);
+  const allContent = loadContent();
+  const updated = allContent.map((c) =>
+    c.seriesId === id ? { ...c, seriesId: undefined } : c
+  );
+  saveContent(updated);
+}
+
 // Get folder by ID
 export function getFolderById(id: string): Folder | undefined {
   return loadFolders().find((f) => f.id === id);
@@ -305,6 +554,7 @@ export function duplicateContent(id: string): Content | undefined {
     updatedAt: now,
     lastViewed: now,
     starred: false, // Don't copy starred status
+    seriesId: undefined,
   };
 
   const allContent = loadContent();
@@ -337,21 +587,8 @@ export function searchContentFull(query: string): Content[] {
       return true;
 
     // Search in document content
-    if (c.docContent) {
-      try {
-        const extractText = (node: any): string => {
-          if (node.text) return node.text;
-          if (node.content) {
-            return node.content.map(extractText).join(" ");
-          }
-          return "";
-        };
-        const text = extractText(c.docContent).toLowerCase();
-        if (text.includes(lowerQuery)) return true;
-      } catch {
-        // Ignore parsing errors
-      }
-    }
+    const text = extractPlainText(c.docContent).toLowerCase();
+    if (text && text.includes(lowerQuery)) return true;
 
     return false;
   });

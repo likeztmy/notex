@@ -7,6 +7,7 @@ import type {
   ChartDataPoint,
   ChartType,
 } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component (Recharts is heavy)
 const ChartBlockComponent = React.lazy(() =>
@@ -16,7 +17,12 @@ const ChartBlockComponent = React.lazy(() =>
 );
 
 // NodeView component
-function ChartBlockView({ node, updateAttributes }: NodeViewProps) {
+function ChartBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: ChartBlockType = {
     id: "",
     type: "chart",
@@ -37,7 +43,12 @@ function ChartBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="chart-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="chart-block"
+      data-label="Chart"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div

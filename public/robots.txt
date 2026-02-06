@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /public
+Allow: /public/
+Disallow: /editor
+Disallow: /content
+Disallow: /recent
+Disallow: /starred
+Disallow: /shared
+Disallow: /tags/
+Disallow: /folders/
+Disallow: /docs
+
+Sitemap: /sitemap.xml

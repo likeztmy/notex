@@ -7,8 +7,11 @@ import {
   Clock,
   Star,
   Folder,
+  FolderPlus,
   Tag,
   Share2,
+  Globe,
+  User,
   ChevronRight,
   ChevronDown,
   PanelLeftClose,
@@ -17,6 +20,8 @@ import {
   Moon,
   Laptop,
 } from "lucide-react";
+import { useContentStore } from "~/store/contentStore";
+import { getAllTagsFromContent } from "~/utils/contentQuery";
 import {
   Sidebar,
   SidebarContent,
@@ -41,10 +46,45 @@ export function GlobalSidebar() {
   const { toggleSidebar } = useSidebar();
   const searchModal = useSearchModalContext();
   const { theme, setTheme } = useTheme();
+  const content = useContentStore((state) => state.content);
+  const folders = useContentStore((state) => state.folders);
+  const createFolder = useContentStore((state) => state.createFolder);
   const [foldersExpanded, setFoldersExpanded] = React.useState(true);
   const [tagsExpanded, setTagsExpanded] = React.useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = React.useState(false);
+  const [newFolderName, setNewFolderName] = React.useState("");
+  const newFolderInputRef = React.useRef<HTMLInputElement>(null);
 
   const isActive = (path: string) => location.pathname === path;
+  const isFolderActive = (folderId: string) =>
+    location.pathname === `/folders/${folderId}`;
+  const isTagActive = (tagName: string) =>
+    location.pathname === `/tags/${encodeURIComponent(tagName)}`;
+
+  const folderCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    content.forEach((item) => {
+      const folderId = item.folderId || "unsorted";
+      counts.set(folderId, (counts.get(folderId) || 0) + 1);
+    });
+    return counts;
+  }, [content]);
+
+  const tagCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    content.forEach((item) => {
+      item.tags?.forEach((tag) => {
+        counts.set(tag, (counts.get(tag) || 0) + 1);
+      });
+    });
+    return counts;
+  }, [content]);
+
+  const tags = React.useMemo(() => getAllTagsFromContent(content), [content]);
+  const starredCount = React.useMemo(
+    () => content.filter((item) => item.starred).length,
+    [content]
+  );
 
   const handleNewDocument = () => {
     navigate({
@@ -52,6 +92,20 @@ export function GlobalSidebar() {
       search: { create: "true" },
     });
   };
+
+  React.useEffect(() => {
+    if (isCreatingFolder) {
+      setTimeout(() => newFolderInputRef.current?.focus(), 50);
+    }
+  }, [isCreatingFolder]);
+
+  const handleCreateFolder = React.useCallback(() => {
+    const trimmedName = newFolderName.trim();
+    if (!trimmedName) return;
+    createFolder(trimmedName);
+    setNewFolderName("");
+    setIsCreatingFolder(false);
+  }, [createFolder, newFolderName]);
 
   return (
     <Sidebar className={styles.sidebar}>
@@ -148,6 +202,26 @@ export function GlobalSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {/* Public Library */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isActive("/public")}>
+              <Link to="/public">
+                <Globe className="h-4 w-4" />
+                <span>Public Library</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Public Profile */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isActive("/profile")}>
+              <Link to="/profile">
+                <User className="h-4 w-4" />
+                <span>Public Profile</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
 
         {/* Folders Section */}
@@ -171,65 +245,77 @@ export function GlobalSidebar() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className={styles.sectionContent}
+                className={cn(
+                  styles.sectionContent,
+                  styles.folderSectionContent
+                )}
               >
-                <SidebarMenu className={styles.menu}>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to="/folders/$folderId"
-                        params={{ folderId: "unsorted" }}
-                      >
-                        <Folder className="h-4 w-4" />
-                        <span>Unsorted</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to="/folders/$folderId"
-                        params={{ folderId: "work" }}
-                      >
-                        <span className="text-sm ml-0.5">📁</span>
-                        <span>How to use Craft</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to="/folders/$folderId"
-                        params={{ folderId: "videos" }}
-                      >
-                        <span className="text-sm ml-0.5">🎬</span>
-                        <span>How To Videos</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to="/folders/$folderId"
-                        params={{ folderId: "handbook" }}
-                      >
-                        <span className="text-sm ml-0.5">📖</span>
-                        <span>Craft Handbook</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        to="/folders/$folderId"
-                        params={{ folderId: "getting-started" }}
-                      >
-                        <span className="text-sm ml-0.5">🚀</span>
-                        <span>Getting Started</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
+                {folders.length === 0 ? (
+                  <div className={styles.hintText}>
+                    Create folders to organize your docs
+                  </div>
+                ) : (
+                  <SidebarMenu className={styles.menu}>
+                    {folders.map((folder) => (
+                      <SidebarMenuItem key={folder.id}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isFolderActive(folder.id)}
+                          className={styles.secondaryItem}
+                        >
+                          <Link
+                            to="/folders/$folderId"
+                            params={{ folderId: folder.id }}
+                          >
+                            {folder.emoji ? (
+                              <span className="text-sm ml-0.5">
+                                {folder.emoji}
+                              </span>
+                            ) : (
+                              <Folder className="h-4 w-4" />
+                            )}
+                            <span>{folder.name}</span>
+                            <span className={styles.itemMeta}>
+                              {folderCounts.get(folder.id) || 0}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                )}
+
+                {isCreatingFolder ? (
+                  <div className={styles.newFolderRow}>
+                    <input
+                      ref={newFolderInputRef}
+                      type="text"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onBlur={() => {
+                        if (newFolderName.trim()) handleCreateFolder();
+                        else setIsCreatingFolder(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCreateFolder();
+                        if (e.key === "Escape") {
+                          setIsCreatingFolder(false);
+                          setNewFolderName("");
+                        }
+                      }}
+                      placeholder="Folder name..."
+                      className={styles.newFolderInput}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    className={styles.newFolderButton}
+                    onClick={() => setIsCreatingFolder(true)}
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                    <span>New folder</span>
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -240,7 +326,11 @@ export function GlobalSidebar() {
           <div className={styles.sectionHeader}>
             <span>Starred</span>
           </div>
-          <div className={styles.hintText}>Star Docs to keep them close</div>
+          <div className={styles.hintText}>
+            {starredCount > 0
+              ? `${starredCount} starred document${starredCount > 1 ? "s" : ""}`
+              : "Star Docs to keep them close"}
+          </div>
         </div>
 
         {/* Tags Section */}
@@ -264,9 +354,40 @@ export function GlobalSidebar() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className={styles.hintText}
+                className={styles.sectionContent}
               >
-                Pin your key tags for quick access
+                {tags.length === 0 ? (
+                  <div className={styles.hintText}>
+                    Add tags to your docs for quick access
+                  </div>
+                ) : (
+                  <>
+                    <SidebarMenu className={styles.menu}>
+                      {tags.slice(0, 8).map((tag) => (
+                        <SidebarMenuItem key={tag}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isTagActive(tag)}
+                            className={styles.secondaryItem}
+                          >
+                            <Link to="/tags/$tagName" params={{ tagName: tag }}>
+                              <Tag className="h-4 w-4" />
+                              <span>#{tag}</span>
+                              <span className={styles.itemMeta}>
+                                {tagCounts.get(tag) || 0}
+                              </span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                    {tags.length > 8 && (
+                      <div className={styles.hintText}>
+                        +{tags.length - 8} more tags
+                      </div>
+                    )}
+                  </>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -295,8 +416,8 @@ export function GlobalSidebar() {
                 {theme === "light"
                   ? "Light Mode"
                   : theme === "dark"
-                    ? "Dark Mode"
-                    : "System Theme"}
+                  ? "Dark Mode"
+                  : "System Theme"}
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -3,6 +3,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import type { TasksBlock as TasksBlockType, TaskItem } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component to reduce initial bundle size
 const TasksBlockComponent = React.lazy(() =>
@@ -12,7 +13,12 @@ const TasksBlockComponent = React.lazy(() =>
 );
 
 // NodeView component that bridges TipTap and the TasksBlock component
-function TasksBlockView({ node, updateAttributes }: NodeViewProps) {
+function TasksBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: TasksBlockType = {
     id: "",
     type: "tasks",
@@ -32,7 +38,12 @@ function TasksBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="tasks-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="tasks-block"
+      data-label="Tasks"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div

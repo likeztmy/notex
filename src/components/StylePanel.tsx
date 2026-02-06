@@ -7,16 +7,21 @@ import type {
   ContentWidth,
   LineHeight,
   TextAlign,
+  PublicTheme,
 } from "~/types/content";
 
 interface StylePanelProps {
   styleConfig: StyleConfig;
+  publicTheme?: PublicTheme;
+  onPublicThemeChange?: (theme: PublicTheme) => void;
   onStyleChange: (config: Partial<StyleConfig>) => void;
   onClose: () => void;
 }
 
 export function StylePanel({
   styleConfig,
+  publicTheme,
+  onPublicThemeChange,
   onStyleChange,
   onClose,
 }: StylePanelProps) {
@@ -168,6 +173,20 @@ export function StylePanel({
               }
             />
           </StyleGroup>
+
+          {onPublicThemeChange && (
+            <StyleGroup label="PUBLIC THEME">
+              <SegmentedControl
+                value={publicTheme || "minimal"}
+                options={[
+                  { value: "minimal", label: "Minimal" },
+                  { value: "editorial", label: "Editorial" },
+                  { value: "noir", label: "Noir" },
+                ]}
+                onChange={(value) => onPublicThemeChange(value as PublicTheme)}
+              />
+            </StyleGroup>
+          )}
         </div>
       </div>
     </>
@@ -224,8 +243,8 @@ function FontButton({
             sublabel === "Serif"
               ? "Georgia, serif"
               : sublabel === "Mono"
-                ? "ui-monospace, monospace"
-                : "system-ui, -apple-system",
+              ? "ui-monospace, monospace"
+              : "system-ui, -apple-system",
         }}
       >
         {label}

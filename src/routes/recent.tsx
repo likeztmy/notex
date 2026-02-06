@@ -4,8 +4,8 @@ import { ContentTable } from "~/components/ContentTable";
 import { ContentGrid } from "~/components/ContentGrid";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-import { getRecentContent } from "~/utils/contentStorage";
-import { useSearchModalContext } from "~/routes/__root";
+import { useContentStore } from "~/store/contentStore";
+import { getRecentContentFromList } from "~/utils/contentQuery";
 import {
   LayoutGridIcon,
   ListIcon,
@@ -19,20 +19,19 @@ export const Route = createFileRoute("/recent")({
 });
 
 function RecentPage() {
-  const [content, setContent] = React.useState(() => getRecentContent(20));
+  const content = useContentStore((state) => state.content);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = React.useState<"updated" | "created" | "title">(
     "updated"
   );
-  const searchModal = useSearchModalContext();
-
-  React.useEffect(() => {
-    setContent(getRecentContent(20));
-  }, []);
+  const recentContent = React.useMemo(
+    () => getRecentContentFromList(content, 20),
+    [content]
+  );
 
   // Sort content
   const sortedContent = React.useMemo(() => {
-    return [...content].sort((a, b) => {
+    return [...recentContent].sort((a, b) => {
       switch (sortBy) {
         case "title":
           return a.title.localeCompare(b.title);

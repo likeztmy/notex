@@ -10,67 +10,35 @@ import {
 } from "lucide-react";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-
-const DOCUMENTS_KEY = "notex-documents";
-
-interface Document {
-  id: string;
-  title: string;
-  content: any;
-  createdAt: number;
-  updatedAt: number;
-  lastViewed?: number;
-}
+import type { Content } from "~/types/content";
+import { useContentStore } from "~/store/contentStore";
+import { getContentPreview } from "~/utils/contentText";
+import {
+  formatRelativeTimeCompact,
+  formatRelativeDateShort,
+} from "~/utils/dateFormat";
 
 interface DocumentListProps {
   onSelectDoc: (id: string) => void;
 }
 
-// Load all documents from localStorage
-const loadDocuments = (): Document[] => {
-  if (typeof window === "undefined") return [];
-  const saved = localStorage.getItem(DOCUMENTS_KEY);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to parse saved documents:", e);
-      return [];
-    }
-  }
-  return [];
-};
-
-// Save documents to localStorage
-const saveDocuments = (documents: Document[]) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(documents));
-};
-
 export function DocumentList({ onSelectDoc }: DocumentListProps) {
-  const [documents, setDocuments] = React.useState<Document[]>([]);
+  const content = useContentStore((state) => state.content);
+  const deleteContent = useContentStore((state) => state.deleteContent);
 
-  // Load documents on mount
-  React.useEffect(() => {
-    setDocuments(loadDocuments());
-  }, []);
-
-  const handleDeleteDoc = React.useCallback(
-    (id: string) => {
-      const updatedDocs = documents.filter((d) => d.id !== id);
-      setDocuments(updatedDocs);
-      saveDocuments(updatedDocs);
-    },
-    [documents],
+  const unsortedDocs = React.useMemo(
+    () =>
+      content.filter((item) => !item.folderId || item.folderId === "unsorted"),
+    [content]
   );
 
   const sortedDocs = React.useMemo(() => {
-    return [...documents].sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [documents]);
+    return [...unsortedDocs].sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [unsortedDocs]);
 
   // Group documents by date
   const groupedDocs = React.useMemo(() => {
-    const groups: { [key: string]: Document[] } = {};
+    const groups: { [key: string]: Content[] } = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
@@ -174,7 +142,7 @@ export function DocumentList({ onSelectDoc }: DocumentListProps) {
                         if (
                           window.confirm(`Delete "${doc.title || "Untitled"}"?`)
                         ) {
-                          handleDeleteDoc(doc.id);
+                          deleteContent(doc.id);
                         }
                       }}
                     />
@@ -194,7 +162,7 @@ function DocumentRow({
   onSelect,
   onDelete,
 }: {
-  document: Document;
+  document: Content;
   onSelect: () => void;
   onDelete: () => void;
 }) {
@@ -225,7 +193,7 @@ function DocumentRow({
             className="text-xs truncate mt-0.5"
             style={{ color: "var(--color-linear-text-tertiary)" }}
           >
-            {getDocumentPreview(document)}
+            {getContentPreview(document, 120, "Empty Document")}
           </div>
         </div>
       </div>
@@ -233,19 +201,19 @@ function DocumentRow({
         className="col-span-2 flex items-center text-xs"
         style={{ color: "var(--color-linear-text-secondary)" }}
       >
-        {formatRelativeTime(document.lastViewed || document.updatedAt)}
+        {formatRelativeTimeCompact(document.lastViewed || document.updatedAt)}
       </div>
       <div
         className="col-span-2 flex items-center text-xs"
         style={{ color: "var(--color-linear-text-secondary)" }}
       >
-        {formatRelativeTime(document.updatedAt)}
+        {formatRelativeTimeCompact(document.updatedAt)}
       </div>
       <div
         className="col-span-2 flex items-center text-xs"
         style={{ color: "var(--color-linear-text-secondary)" }}
       >
-        {formatAbsoluteDate(document.createdAt)}
+        {formatRelativeDateShort(document.createdAt)}
       </div>
       <div className="col-span-1 flex items-center justify-end">
         {isHovered && (
@@ -267,50 +235,4 @@ function DocumentRow({
       </div>
     </button>
   );
-}
-
-function getDocumentPreview(document: Document): string {
-  if (!document.content || !document.content.content) return "Empty Document";
-
-  // Extract text from Tiptap JSON content
-  const extractText = (node: any): string => {
-    if (node.type === "text") return node.text || "";
-    if (node.content) {
-      return node.content.map((child: any) => extractText(child)).join(" ");
-    }
-    return "";
-  };
-
-  const text = extractText(document.content).trim();
-  return text || "Empty Document";
-}
-
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-
-  if (hours < 1) {
-    const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) return "刚刚";
-    return `${minutes}分钟前`;
-  }
-  if (hours < 24) return `${hours}小时前`;
-
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}天前`;
-  if (days < 30) return `${Math.floor(days / 7)}周前`;
-
-  return formatAbsoluteDate(timestamp);
-}
-
-function formatAbsoluteDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date
-    .toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
-    .replace(/\//g, "/");
 }

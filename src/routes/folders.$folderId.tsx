@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import * as React from "react";
 import { ContentTable } from "~/components/ContentTable";
 import { ContentGrid } from "~/components/ContentGrid";
-import { getContentByFolder, getFolderById } from "~/utils/contentStorage";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
+import { useContentStore } from "~/store/contentStore";
+import {
+  getContentByFolderFromList,
+  getFolderByIdFromList,
+} from "~/utils/contentQuery";
 import {
   FolderIcon,
   LayoutGridIcon,
@@ -21,19 +25,21 @@ export const Route = createFileRoute("/folders/$folderId")({
 
 function FolderPage() {
   const { folderId } = Route.useParams();
-  const [content, setContent] = React.useState(() =>
-    getContentByFolder(folderId)
-  );
+  const content = useContentStore((state) => state.content);
+  const folders = useContentStore((state) => state.folders);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
 
   // Get folder info from storage
-  const folder = getFolderById(folderId);
+  const folder = React.useMemo(
+    () => getFolderByIdFromList(folders, folderId),
+    [folders, folderId]
+  );
   const folderName = folder?.name || folderId;
   const folderEmoji = folder?.emoji;
-
-  React.useEffect(() => {
-    setContent(getContentByFolder(folderId));
-  }, [folderId]);
+  const folderContent = React.useMemo(
+    () => getContentByFolderFromList(content, folderId),
+    [content, folderId]
+  );
 
   const titleWithEmoji = folderEmoji ? (
     <span className="flex items-center gap-2">
@@ -82,12 +88,12 @@ function FolderPage() {
       <div className="flex-1 overflow-auto px-6 py-4">
         {viewMode === "grid" ? (
           <ContentGrid
-            content={content}
+            content={folderContent}
             emptyMessage={`No content in ${folderName} yet`}
           />
         ) : (
           <ContentTable
-            content={content}
+            content={folderContent}
             emptyMessage={`No content in ${folderName} yet`}
           />
         )}

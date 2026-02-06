@@ -72,34 +72,56 @@ export function MermaidBlock({ block, onChange }: MermaidBlockProps) {
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <input
-          type="text"
-          value={block.title || ""}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Diagram title"
-          className="flex-1 text-sm font-medium border-none outline-none bg-transparent"
-          style={{ color: "var(--color-linear-text-primary)" }}
-        />
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="text-xs px-3 py-1 rounded"
-          style={{
-            background: isEditing
-              ? "var(--color-linear-accent-primary)"
-              : "var(--color-linear-bg-secondary)",
-            color: isEditing ? "white" : "var(--color-linear-text-secondary)",
-          }}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={block.title || ""}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="Diagram title"
+            className="w-full text-sm font-semibold border-none outline-none bg-transparent"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          />
+          <div className="block-label">Mermaid</div>
+        </div>
+        <div
+          className="flex gap-1 rounded-full p-1"
+          style={{ background: "var(--color-linear-bg-tertiary)" }}
         >
-          {isEditing ? "Preview" : "Edit"}
-        </button>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background: isEditing
+                ? "var(--color-linear-bg-elevated)"
+                : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow: isEditing ? "var(--shadow-linear-sm)" : "none",
+            }}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background: !isEditing
+                ? "var(--color-linear-bg-elevated)"
+                : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow: !isEditing ? "var(--shadow-linear-sm)" : "none",
+            }}
+          >
+            Preview
+          </button>
+        </div>
       </div>
 
       {/* Examples (only when editing) */}
       {isEditing && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className="text-xs"
             style={{ color: "var(--color-linear-text-tertiary)" }}
@@ -110,8 +132,11 @@ export function MermaidBlock({ block, onChange }: MermaidBlockProps) {
             <button
               key={example.name}
               onClick={() => onChange({ diagram: example.code })}
-              className="text-xs px-2 py-1 rounded hover:bg-gray-100"
-              style={{ color: "var(--color-linear-text-secondary)" }}
+              className="text-xs px-2 py-1 rounded-full"
+              style={{
+                color: "var(--color-linear-text-secondary)",
+                background: "var(--color-linear-bg-tertiary)",
+              }}
             >
               {example.name}
             </button>
@@ -124,7 +149,7 @@ export function MermaidBlock({ block, onChange }: MermaidBlockProps) {
         <textarea
           value={block.diagram}
           onChange={(e) => onChange({ diagram: e.target.value })}
-          className="w-full h-64 p-4 font-mono text-sm border rounded resize-none"
+          className="w-full h-64 p-4 font-mono text-sm border rounded-xl resize-none"
           style={{
             borderColor: "var(--color-linear-border-primary)",
             background: "var(--color-linear-bg-secondary)",
@@ -133,7 +158,7 @@ export function MermaidBlock({ block, onChange }: MermaidBlockProps) {
         />
       ) : (
         <div
-          className="p-6 rounded border min-h-[200px] flex items-center justify-center"
+          className="p-6 rounded-xl border min-h-[200px] flex items-center justify-center"
           style={{
             borderColor: "var(--color-linear-border-primary)",
             background: "var(--color-linear-bg-secondary)",

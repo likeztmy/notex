@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, X } from "lucide-react";
 import type {
   HabitsBlock as HabitsBlockType,
   Habit,
@@ -56,7 +56,7 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
           return {
             ...habit,
             entries: habit.entries.map((e) =>
-              e.date === dateStr ? { ...e, completed: !e.completed } : e,
+              e.date === dateStr ? { ...e, completed: !e.completed } : e
             ),
           };
         } else {
@@ -92,28 +92,46 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3
-          className="text-lg font-semibold"
-          style={{ color: "var(--color-linear-text-primary)" }}
+        <div>
+          <h3
+            className="text-sm font-semibold"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          >
+            Habits
+          </h3>
+          <div className="block-label">Habits</div>
+        </div>
+        <div
+          className="flex gap-1 rounded-full p-1"
+          style={{ background: "var(--color-linear-bg-tertiary)" }}
         >
-          Habit Tracker
-        </h3>
-        <div className="flex gap-2">
           <button
             onClick={() => onChange({ viewMode: "week" })}
-            className={`text-xs px-3 py-1 rounded ${
-              block.viewMode === "week" ? "bg-gray-200" : ""
-            }`}
-            style={{ color: "var(--color-linear-text-secondary)" }}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background:
+                block.viewMode === "week"
+                  ? "var(--color-linear-bg-elevated)"
+                  : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow:
+                block.viewMode === "week" ? "var(--shadow-linear-sm)" : "none",
+            }}
           >
             Week
           </button>
           <button
             onClick={() => onChange({ viewMode: "month" })}
-            className={`text-xs px-3 py-1 rounded ${
-              block.viewMode === "month" ? "bg-gray-200" : ""
-            }`}
-            style={{ color: "var(--color-linear-text-secondary)" }}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background:
+                block.viewMode === "month"
+                  ? "var(--color-linear-bg-elevated)"
+                  : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow:
+                block.viewMode === "month" ? "var(--shadow-linear-sm)" : "none",
+            }}
           >
             Month
           </button>
@@ -122,10 +140,17 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
 
       {/* Grid */}
       {block.habits.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div
+          className="overflow-x-auto rounded-xl border"
+          style={{ borderColor: "var(--color-linear-border-primary)" }}
+        >
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr>
+              <tr
+                style={{
+                  background: "var(--color-linear-bg-secondary)",
+                }}
+              >
                 <th
                   className="text-left p-2 text-xs font-medium"
                   style={{ color: "var(--color-linear-text-tertiary)" }}
@@ -145,19 +170,22 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
             </thead>
             <tbody>
               {block.habits.map((habit) => (
-                <tr key={habit.id} className="group hover:bg-gray-50">
+                <tr
+                  key={habit.id}
+                  className="group"
+                  style={{
+                    borderTop: "1px solid var(--color-linear-border-secondary)",
+                  }}
+                >
                   <td className="p-2 flex items-center gap-2">
                     <span style={{ color: "var(--color-linear-text-primary)" }}>
-                      {habit.emoji && (
-                        <span className="mr-1">{habit.emoji}</span>
-                      )}
                       {habit.name}
                     </span>
                     <button
                       onClick={() => deleteHabit(habit.id)}
                       className="opacity-0 group-hover:opacity-100 text-red-500 text-xs ml-auto"
                     >
-                      Delete
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </td>
                   {dates.map((date, i) => {
@@ -167,7 +195,7 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
                       <td key={i} className="text-center p-2">
                         <button
                           onClick={() => toggleHabit(habit.id, dateStr)}
-                          className="w-6 h-6 rounded border flex items-center justify-center mx-auto transition-all hover:scale-110"
+                          className="w-5 h-5 rounded border flex items-center justify-center mx-auto transition-all"
                           style={{
                             borderColor: completed
                               ? "var(--color-linear-accent-primary)"
@@ -178,7 +206,7 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
                           }}
                         >
                           {completed && (
-                            <Check className="w-4 h-4 text-white" />
+                            <Check className="w-3.5 h-3.5 text-white" />
                           )}
                         </button>
                       </td>
@@ -193,10 +221,15 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
 
       {/* Add Habit Input */}
       <div className="flex items-center gap-2 pt-2">
-        <Plus
-          className="w-4 h-4"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
-        />
+        <div
+          className="w-4 h-4 flex items-center justify-center rounded border"
+          style={{ borderColor: "var(--color-linear-border-primary)" }}
+        >
+          <Plus
+            className="w-3 h-3"
+            style={{ color: "var(--color-linear-text-tertiary)" }}
+          />
+        </div>
         <input
           type="text"
           value={newHabitName}
@@ -213,7 +246,7 @@ export function HabitsBlock({ block, onChange }: HabitsBlockProps) {
         {newHabitName && (
           <button
             onClick={addHabit}
-            className="text-xs px-2 py-1 rounded"
+            className="text-xs px-2.5 py-1 rounded-full"
             style={{
               background: "var(--color-linear-accent-primary)",
               color: "white",

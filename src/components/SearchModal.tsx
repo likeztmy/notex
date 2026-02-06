@@ -9,9 +9,17 @@ import {
   Star,
   ArrowRight,
   CornerDownLeft,
+  Plus,
 } from "lucide-react";
-import { searchContentFull, getRecentContent } from "~/utils/contentStorage";
 import type { Content } from "~/types/content";
+import { useContentStore } from "~/store/contentStore";
+import {
+  getAllTagsFromContent,
+  getRecentContentFromList,
+  getStarredContentFromList,
+  searchContentFromList,
+} from "~/utils/contentQuery";
+import { getContentPreview } from "~/utils/contentText";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -19,26 +27,58 @@ interface SearchModalProps {
 }
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const content = useContentStore((state) => state.content);
+  const createContent = useContentStore((state) => state.createContent);
   const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<Content[]>([]);
+  const [filterTag, setFilterTag] = React.useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Get recent documents when no query
-  const recentDocs = React.useMemo(() => getRecentContent(5), []);
+  const recentDocs = React.useMemo(
+    () => getRecentContentFromList(content, 5),
+    [content]
+  );
+  const allTags = React.useMemo(
+    () => getAllTagsFromContent(content),
+    [content]
+  );
+  const filterByTag = React.useCallback(
+    (items: Content[]) => {
+      if (!filterTag) return items;
+      return items.filter((item) => item.tags?.includes(filterTag));
+    },
+    [filterTag]
+  );
 
-  // Search when query changes
+  const starredDocs = React.useMemo(() => {
+    const recentIds = new Set(recentDocs.map((item) => item.id));
+    return filterByTag(
+      getStarredContentFromList(content)
+        .filter((item) => !recentIds.has(item.id))
+        .slice(0, 5)
+    );
+  }, [content, recentDocs, filterByTag]);
+
+  const filteredRecentDocs = React.useMemo(() => {
+    return filterByTag(recentDocs);
+  }, [recentDocs, filterByTag]);
+
+  const results = React.useMemo(() => {
+    if (!query.trim()) return [];
+    return filterByTag(searchContentFromList(content, query));
+  }, [content, query, filterByTag]);
+
   React.useEffect(() => {
-    if (query.trim()) {
-      const searchResults = searchContentFull(query);
-      setResults(searchResults);
-      setSelectedIndex(0);
-    } else {
-      setResults([]);
-      setSelectedIndex(0);
+    setSelectedIndex(0);
+  }, [query, results.length, filteredRecentDocs.length, starredDocs.length]);
+
+  React.useEffect(() => {
+    if (filterTag && !allTags.includes(filterTag)) {
+      setFilterTag(null);
     }
-  }, [query]);
+  }, [filterTag, allTags]);
 
   // Focus input when modal opens
   React.useEffect(() => {
@@ -46,27 +86,40 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
-      setResults([]);
       setSelectedIndex(0);
     }
   }, [isOpen]);
 
   // Handle keyboard navigation
+  const displayItems = query.trim()
+    ? results
+    : [...filteredRecentDocs, ...starredDocs];
+  const showRecent = !query.trim() && filteredRecentDocs.length > 0;
+  const showStarred = !query.trim() && starredDocs.length > 0;
+  const showCreate = Boolean(query.trim());
+  const isCreateSelected = showCreate && selectedIndex === 0;
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    const items = query.trim() ? results : recentDocs;
+    const items = displayItems;
+    const hasCreate = Boolean(query.trim());
+    const totalItems = items.length + (hasCreate ? 1 : 0);
+    if (totalItems === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
+      setSelectedIndex((prev) => (prev < totalItems - 1 ? prev + 1 : 0));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : totalItems - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const selectedItem = items[selectedIndex];
-      if (selectedItem) {
-        handleSelect(selectedItem);
+      if (hasCreate && selectedIndex === 0) {
+        handleCreateNew();
+        return;
       }
+      const targetIndex = hasCreate ? selectedIndex - 1 : selectedIndex;
+      const selectedItem = items[targetIndex];
+      if (selectedItem) handleSelect(selectedItem);
     } else if (e.key === "Escape") {
       e.preventDefault();
       onClose();
@@ -78,8 +131,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     onClose();
   };
 
-  const displayItems = query.trim() ? results : recentDocs;
-  const showRecent = !query.trim() && recentDocs.length > 0;
+  const handleCreateNew = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const newContent = createContent(trimmed);
+    navigate({ to: "/editor", search: { id: newContent.id } });
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -155,9 +213,90 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <span>esc</span>
                 </div>
               </div>
+              {allTags.length > 0 && (
+                <div
+                  className="flex items-center gap-2 px-4 py-2 text-xs overflow-x-auto"
+                  style={{
+                    borderBottom:
+                      "1px solid var(--color-linear-border-primary)",
+                    color: "var(--color-linear-text-tertiary)",
+                  }}
+                >
+                  <button
+                    onClick={() => setFilterTag(null)}
+                    className="px-2 py-1 rounded-full border transition-colors"
+                    style={{
+                      borderColor: "var(--color-linear-border-primary)",
+                      background: filterTag
+                        ? "transparent"
+                        : "var(--color-linear-bg-tertiary)",
+                      color: "var(--color-linear-text-secondary)",
+                    }}
+                  >
+                    All
+                  </button>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setFilterTag(tag)}
+                      className="px-2 py-1 rounded-full border transition-colors"
+                      style={{
+                        borderColor: "var(--color-linear-border-primary)",
+                        background:
+                          filterTag === tag
+                            ? "var(--color-linear-bg-tertiary)"
+                            : "transparent",
+                        color: "var(--color-linear-text-secondary)",
+                      }}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Results */}
               <div className="max-h-80 overflow-y-auto">
+                {showCreate && (
+                  <button
+                    onClick={handleCreateNew}
+                    onMouseEnter={() => setSelectedIndex(0)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                    style={{
+                      background: isCreateSelected
+                        ? "var(--color-linear-bg-hover)"
+                        : "transparent",
+                    }}
+                  >
+                    <div
+                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: "var(--color-linear-bg-tertiary)" }}
+                    >
+                      <Plus
+                        className="h-4 w-4"
+                        style={{ color: "var(--color-linear-text-secondary)" }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className="text-sm font-medium truncate"
+                        style={{ color: "var(--color-linear-text-primary)" }}
+                      >
+                        Create "{query.trim()}"
+                      </div>
+                      <div
+                        className="text-xs truncate"
+                        style={{ color: "var(--color-linear-text-tertiary)" }}
+                      >
+                        New document
+                      </div>
+                    </div>
+                    <CornerDownLeft
+                      className="h-4 w-4 flex-shrink-0"
+                      style={{ color: "var(--color-linear-text-tertiary)" }}
+                    />
+                  </button>
+                )}
                 {showRecent && (
                   <div
                     className="px-4 py-2 text-xs font-medium uppercase tracking-wide"
@@ -177,15 +316,82 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   </div>
                 )}
 
-                {displayItems.map((item, index) => (
-                  <SearchResultItem
-                    key={item.id}
-                    content={item}
-                    isSelected={index === selectedIndex}
-                    onClick={() => handleSelect(item)}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                  />
-                ))}
+                {query.trim() && results.length > 0 && (
+                  <div
+                    className="px-4 py-2 text-xs font-medium uppercase tracking-wide"
+                    style={{ color: "var(--color-linear-text-tertiary)" }}
+                  >
+                    Results
+                  </div>
+                )}
+
+                {query.trim() &&
+                  results.map((item, index) => (
+                    <SearchResultItem
+                      key={item.id}
+                      content={item}
+                      query={query}
+                      isSelected={
+                        showCreate
+                          ? index + 1 === selectedIndex
+                          : index === selectedIndex
+                      }
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() =>
+                        setSelectedIndex(showCreate ? index + 1 : index)
+                      }
+                    />
+                  ))}
+
+                {showRecent &&
+                  filteredRecentDocs.map((item, index) => (
+                    <SearchResultItem
+                      key={item.id}
+                      content={item}
+                      query={query}
+                      isSelected={
+                        showCreate
+                          ? index + 1 === selectedIndex
+                          : index === selectedIndex
+                      }
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() =>
+                        setSelectedIndex(showCreate ? index + 1 : index)
+                      }
+                    />
+                  ))}
+
+                {showStarred && (
+                  <div
+                    className="px-4 py-2 text-xs font-medium uppercase tracking-wide"
+                    style={{ color: "var(--color-linear-text-tertiary)" }}
+                  >
+                    <Star className="inline-block h-3 w-3 mr-1.5 -mt-0.5" />
+                    Starred
+                  </div>
+                )}
+
+                {showStarred &&
+                  starredDocs.map((item, index) => {
+                    const offset = filteredRecentDocs.length;
+                    const position = offset + index;
+                    return (
+                      <SearchResultItem
+                        key={item.id}
+                        content={item}
+                        query={query}
+                        isSelected={
+                          showCreate
+                            ? position + 1 === selectedIndex
+                            : position === selectedIndex
+                        }
+                        onClick={() => handleSelect(item)}
+                        onMouseEnter={() =>
+                          setSelectedIndex(showCreate ? position + 1 : position)
+                        }
+                      />
+                    );
+                  })}
 
                 {displayItems.length === 0 && !query.trim() && (
                   <div
@@ -228,7 +434,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     >
                       <CornerDownLeft className="h-3 w-3" />
                     </kbd>
-                    <span className="ml-1">open</span>
+                    <span className="ml-1">
+                      {showCreate ? "create" : "open"}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -240,8 +448,30 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   );
 }
 
+function highlightText(text: string, query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return [{ text, match: false }];
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "gi");
+  const parts: { text: string; match: boolean }[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: text.slice(lastIndex, match.index), match: false });
+    }
+    parts.push({ text: match[0], match: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ text: text.slice(lastIndex), match: false });
+  }
+  return parts.length > 0 ? parts : [{ text, match: false }];
+}
+
 interface SearchResultItemProps {
   content: Content;
+  query: string;
   isSelected: boolean;
   onClick: () => void;
   onMouseEnter: () => void;
@@ -249,11 +479,14 @@ interface SearchResultItemProps {
 
 function SearchResultItem({
   content,
+  query,
   isSelected,
   onClick,
   onMouseEnter,
 }: SearchResultItemProps) {
-  const preview = getContentPreview(content);
+  const preview = getContentPreview(content, 80, "Empty document");
+  const titleParts = highlightText(content.title || "Untitled", query);
+  const previewParts = highlightText(preview, query);
 
   return (
     <button
@@ -278,13 +511,45 @@ function SearchResultItem({
           className="text-sm font-medium truncate"
           style={{ color: "var(--color-linear-text-primary)" }}
         >
-          {content.title || "Untitled"}
+          {titleParts.map((part, index) =>
+            part.match ? (
+              <mark
+                key={`${part.text}-${index}`}
+                style={{
+                  background: "rgba(255, 220, 100, 0.35)",
+                  color: "inherit",
+                  borderRadius: "2px",
+                  padding: "0 2px",
+                }}
+              >
+                {part.text}
+              </mark>
+            ) : (
+              <span key={`${part.text}-${index}`}>{part.text}</span>
+            )
+          )}
         </div>
         <div
           className="text-xs truncate"
           style={{ color: "var(--color-linear-text-tertiary)" }}
         >
-          {preview}
+          {previewParts.map((part, index) =>
+            part.match ? (
+              <mark
+                key={`${part.text}-${index}`}
+                style={{
+                  background: "rgba(255, 220, 100, 0.25)",
+                  color: "inherit",
+                  borderRadius: "2px",
+                  padding: "0 2px",
+                }}
+              >
+                {part.text}
+              </mark>
+            ) : (
+              <span key={`${part.text}-${index}`}>{part.text}</span>
+            )
+          )}
         </div>
       </div>
       {content.starred && (
@@ -301,26 +566,6 @@ function SearchResultItem({
       )}
     </button>
   );
-}
-
-// Helper: Get content preview text
-function getContentPreview(content: Content): string {
-  if (content.docContent) {
-    try {
-      const extractText = (node: any): string => {
-        if (node.text) return node.text;
-        if (node.content) {
-          return node.content.map(extractText).join(" ");
-        }
-        return "";
-      };
-      const text = extractText(content.docContent).trim();
-      return text.slice(0, 80) || "Empty document";
-    } catch {
-      return "Empty document";
-    }
-  }
-  return "No content";
 }
 
 // Hook for global search shortcut

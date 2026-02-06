@@ -1,13 +1,9 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  FileTextIcon,
-  StarIcon,
-  SparklesIcon,
-  ArrowUpRightIcon,
-} from "lucide-react";
+import { FileTextIcon, StarIcon, SparklesIcon } from "lucide-react";
 import type { Content } from "~/types/content";
-import { cn } from "~/lib/utils";
+import { getContentPreview } from "~/utils/contentText";
+import { formatRelativeTimeCompact } from "~/utils/dateFormat";
 
 interface ContentListProps {
   content: Content[];
@@ -22,16 +18,10 @@ export function ContentList({
 }: ContentListProps) {
   if (content.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="relative mb-10">
-          <div
-            className="absolute inset-0 blur-3xl opacity-5 animate-softPulse"
-            style={{
-              background: "radial-gradient(circle, var(--color-linear-accent-primary) 0%, transparent 70%)",
-            }}
-          />
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="relative mb-6">
           <SparklesIcon
-            className="h-24 w-24 relative animate-float"
+            className="h-12 w-12 relative"
             style={{
               strokeWidth: 1,
               color: "var(--color-linear-text-tertiary)",
@@ -39,14 +29,14 @@ export function ContentList({
           />
         </div>
         <h3
-          className="text-3xl font-serif font-normal mb-4 tracking-tight"
+          className="text-lg font-medium mb-2"
           style={{ color: "var(--color-linear-text-primary)" }}
         >
           No content yet
         </h3>
         <p
-          className="text-base font-light leading-relaxed"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
+          className="text-sm leading-relaxed"
+          style={{ color: "var(--view-preview-color)" }}
         >
           {emptyMessage}
         </p>
@@ -54,15 +44,17 @@ export function ContentList({
     );
   }
 
-  // Sort by last viewed, then by updated date
-  const sortedContent = [...content].sort((a, b) => {
-    if (a.lastViewed && b.lastViewed) {
-      return b.lastViewed - a.lastViewed;
-    }
-    if (a.lastViewed) return -1;
-    if (b.lastViewed) return 1;
-    return b.updatedAt - a.updatedAt;
-  });
+  const sortedContent = React.useMemo(() => {
+    // Sort by last viewed, then by updated date
+    return [...content].sort((a, b) => {
+      if (a.lastViewed && b.lastViewed) {
+        return b.lastViewed - a.lastViewed;
+      }
+      if (a.lastViewed) return -1;
+      if (b.lastViewed) return 1;
+      return b.updatedAt - a.updatedAt;
+    });
+  }, [content]);
 
   return (
     <div className="content-list-container">
@@ -90,11 +82,18 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
   const ModeIcon = FileTextIcon;
   const modeLabel = "Document";
 
-  const formattedDate = content.lastViewed
-    ? formatRelativeTime(content.lastViewed)
-    : formatRelativeTime(content.updatedAt);
+  const formattedDate = React.useMemo(
+    () =>
+      content.lastViewed
+        ? formatRelativeTimeCompact(content.lastViewed)
+        : formatRelativeTimeCompact(content.updatedAt),
+    [content.lastViewed, content.updatedAt]
+  );
 
-  const preview = getContentPreview(content);
+  const preview = React.useMemo(
+    () => getContentPreview(content, 120, "Empty document"),
+    [content]
+  );
 
   return (
     <Link
@@ -109,7 +108,7 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
     >
       <article className="content-list-item-inner">
         {/* Meta row */}
-        <div className="flex items-center gap-6 mb-4">
+        <div className="flex items-center gap-4 mb-4">
           {showMode && (
             <div className="flex items-center gap-2.5">
               <ModeIcon
@@ -118,8 +117,8 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
                 style={{ color: "var(--color-linear-text-tertiary)" }}
               />
               <span
-                className="text-[11px] font-light tracking-[0.12em] uppercase"
-                style={{ color: "var(--color-linear-text-tertiary)" }}
+                className="text-[10px] tracking-[0.12em] uppercase"
+                style={{ color: "var(--view-meta-color)" }}
               >
                 {modeLabel}
               </span>
@@ -127,8 +126,8 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
           )}
 
           <time
-            className="text-[11px] font-light tracking-wide"
-            style={{ color: "var(--color-linear-text-tertiary)" }}
+            className="text-[10px] tracking-wide"
+            style={{ color: "var(--view-meta-color)" }}
           >
             {formattedDate}
           </time>
@@ -136,17 +135,19 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
           {content.starred && (
             <StarIcon
               className="h-3.5 w-3.5 fill-current ml-auto"
-              style={{ color: "var(--color-linear-text-primary)" }}
+              style={{ color: "var(--color-linear-warning)" }}
             />
           )}
         </div>
 
         {/* Title */}
         <h2
-          className="text-3xl md:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-[1.15] tracking-[-0.025em] transition-all duration-400"
+          className="mb-4 leading-[1.2] tracking-[-0.02em] transition-all duration-400"
           style={{
             color: "var(--color-linear-text-primary)",
-            transform: isHovered ? "translateX(8px)" : "translateX(0)",
+            fontSize: "clamp(1.5rem, 2vw, 2.25rem)",
+            fontWeight: "var(--view-title-weight)",
+            transform: isHovered ? "translateX(6px)" : "translateX(0)",
           }}
         >
           {content.title || "Untitled"}
@@ -154,10 +155,11 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
 
         {/* Preview */}
         <p
-          className="text-base md:text-lg font-light leading-relaxed max-w-3xl"
+          className="leading-relaxed max-w-3xl"
           style={{
-            color: "var(--color-linear-text-secondary)",
-            lineHeight: "1.75",
+            color: "var(--view-preview-color)",
+            fontSize: "var(--view-preview-size)",
+            lineHeight: "1.7",
           }}
         >
           {preview}
@@ -174,52 +176,4 @@ function ContentCard({ content, showMode, index }: ContentCardProps) {
       </article>
     </Link>
   );
-}
-
-// Helper: Get content preview text
-function getContentPreview(content: Content): string {
-  if (content.docContent) {
-    // Extract text from TipTap JSON
-    try {
-      const extractText = (node: any): string => {
-        if (node.text) return node.text;
-        if (node.content) {
-          return node.content.map(extractText).join(" ");
-        }
-        return "";
-      };
-      const text = extractText(content.docContent).trim();
-      return text || "Empty document";
-    } catch {
-      return "Empty document";
-    }
-  }
-
-  return "No content";
-}
-
-// Helper: Format relative time
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 7) {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year:
-        new Date(timestamp).getFullYear() !== new Date().getFullYear()
-          ? "numeric"
-          : undefined,
-    });
-  }
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return "Just now";
 }

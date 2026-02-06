@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Link as LinkIcon } from "lucide-react";
 import type {
   EmbedBlock as EmbedBlockType,
   EmbedProvider,
@@ -22,7 +22,7 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
     if (provider === "youtube") {
       // Convert YouTube watch URL to embed URL
       const videoId = url.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/
       )?.[1];
       if (videoId) {
         return `https://www.youtube.com/embed/${videoId}`;
@@ -31,7 +31,7 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
       // Figma embed URL
       if (url.includes("figma.com")) {
         return `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(
-          url,
+          url
         )}`;
       }
     }
@@ -55,70 +55,97 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
   const hasValidUrl = block.url.trim().length > 0;
 
   return (
-    <div className="space-y-3">
-      {/* Controls */}
-      <div className="flex items-center gap-2">
-        <select
-          value={block.provider}
-          onChange={(e) =>
-            onChange({ provider: e.target.value as EmbedProvider })
-          }
-          className="text-xs px-2 py-1 rounded border"
-          style={{
-            borderColor: "var(--color-linear-border-primary)",
-            color: "var(--color-linear-text-secondary)",
-          }}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={block.title || ""}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="Embed title"
+            className="w-full text-sm font-semibold border-none outline-none bg-transparent"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          />
+          <div className="block-label">Embed</div>
+        </div>
+        <div
+          className="flex gap-1 rounded-full p-1"
+          style={{ background: "var(--color-linear-bg-tertiary)" }}
         >
           {PROVIDERS.map((provider) => (
-            <option key={provider.value} value={provider.value}>
+            <button
+              key={provider.value}
+              onClick={() => onChange({ provider: provider.value })}
+              className="text-xs px-3 py-1 rounded-full"
+              style={{
+                background:
+                  block.provider === provider.value
+                    ? "var(--color-linear-bg-elevated)"
+                    : "transparent",
+                color: "var(--color-linear-text-secondary)",
+                boxShadow:
+                  block.provider === provider.value
+                    ? "var(--shadow-linear-sm)"
+                    : "none",
+              }}
+            >
               {provider.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
+      </div>
 
-        <select
-          value={block.aspectRatio || "16:9"}
-          onChange={(e) => onChange({ aspectRatio: e.target.value as any })}
-          className="text-xs px-2 py-1 rounded border"
-          style={{
-            borderColor: "var(--color-linear-border-primary)",
-            color: "var(--color-linear-text-secondary)",
-          }}
-        >
-          <option value="16:9">16:9</option>
-          <option value="4:3">4:3</option>
-          <option value="1:1">1:1</option>
-        </select>
+      <div
+        className="flex gap-1 rounded-full p-1 w-fit"
+        style={{ background: "var(--color-linear-bg-tertiary)" }}
+      >
+        {(["16:9", "4:3", "1:1"] as const).map((ratio) => (
+          <button
+            key={ratio}
+            onClick={() => onChange({ aspectRatio: ratio })}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background:
+                (block.aspectRatio || "16:9") === ratio
+                  ? "var(--color-linear-bg-elevated)"
+                  : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow:
+                (block.aspectRatio || "16:9") === ratio
+                  ? "var(--shadow-linear-sm)"
+                  : "none",
+            }}
+          >
+            {ratio}
+          </button>
+        ))}
       </div>
 
       {/* URL Input */}
-      <input
-        type="text"
-        value={block.url}
-        onChange={(e) => onChange({ url: e.target.value })}
-        placeholder={
-          block.provider === "youtube"
-            ? "Paste YouTube URL..."
-            : block.provider === "figma"
-            ? "Paste Figma URL..."
-            : "Paste URL..."
-        }
-        className="w-full px-3 py-2 text-sm border rounded"
-        style={{
-          borderColor: "var(--color-linear-border-primary)",
-          color: "var(--color-linear-text-primary)",
-        }}
-      />
-
-      {/* Title */}
-      <input
-        type="text"
-        value={block.title || ""}
-        onChange={(e) => onChange({ title: e.target.value })}
-        placeholder="Title (optional)"
-        className="w-full text-sm font-medium border-none outline-none bg-transparent"
-        style={{ color: "var(--color-linear-text-primary)" }}
-      />
+      <div
+        className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+        style={{ borderColor: "var(--color-linear-border-primary)" }}
+      >
+        <LinkIcon
+          className="w-4 h-4"
+          style={{ color: "var(--color-linear-text-tertiary)" }}
+        />
+        <input
+          type="text"
+          value={block.url}
+          onChange={(e) => onChange({ url: e.target.value })}
+          placeholder={
+            block.provider === "youtube"
+              ? "Paste YouTube URL..."
+              : block.provider === "figma"
+              ? "Paste Figma URL..."
+              : "Paste URL..."
+          }
+          className="w-full text-sm border-none outline-none bg-transparent"
+          style={{ color: "var(--color-linear-text-primary)" }}
+        />
+      </div>
 
       {/* Embed Preview */}
       {hasValidUrl ? (
@@ -128,7 +155,7 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
             href={block.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block p-4 rounded border hover:border-gray-400 transition-colors"
+            className="block p-4 rounded-xl border transition-colors"
             style={{ borderColor: "var(--color-linear-border-primary)" }}
           >
             <div className="flex items-start gap-3">
@@ -155,7 +182,7 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
         ) : (
           // iframe embed
           <div
-            className="relative overflow-hidden rounded border"
+            className="relative overflow-hidden rounded-xl border"
             style={{
               paddingTop: getAspectRatioPadding(),
               borderColor: "var(--color-linear-border-primary)",
@@ -172,7 +199,7 @@ export function EmbedBlock({ block, onChange }: EmbedBlockProps) {
         )
       ) : (
         <div
-          className="h-48 flex items-center justify-center border-2 border-dashed rounded"
+          className="h-48 flex items-center justify-center border-2 border-dashed rounded-xl"
           style={{ borderColor: "var(--color-linear-border-primary)" }}
         >
           <p

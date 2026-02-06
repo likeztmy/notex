@@ -49,7 +49,7 @@ export function ChartBlock({ block, onChange }: ChartBlockProps) {
   const updateDataPoint = (index: number, updates: Partial<ChartDataPoint>) => {
     onChange({
       data: block.data.map((point, i) =>
-        i === index ? { ...point, ...updates } : point,
+        i === index ? { ...point, ...updates } : point
       ),
     });
   };
@@ -183,51 +183,71 @@ export function ChartBlock({ block, onChange }: ChartBlockProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <input
-          type="text"
-          value={block.title || ""}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Chart Title"
-          className="text-lg font-semibold border-none outline-none bg-transparent"
-          style={{ color: "var(--color-linear-text-primary)" }}
-        />
-        <div className="flex gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={block.title || ""}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="Chart title"
+            className="w-full text-sm font-semibold border-none outline-none bg-transparent"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          />
+          <div className="block-label">Chart</div>
+        </div>
+        <div
+          className="flex gap-1 rounded-full p-1"
+          style={{ background: "var(--color-linear-bg-tertiary)" }}
+        >
           {(["bar", "line", "area", "pie", "radar"] as ChartType[]).map(
             (type) => (
               <button
                 key={type}
                 onClick={() => onChange({ chartType: type })}
-                className={`text-xs px-3 py-1 rounded capitalize ${
-                  block.chartType === type ? "bg-gray-200" : ""
-                }`}
-                style={{ color: "var(--color-linear-text-secondary)" }}
+                className="text-xs px-3 py-1 rounded-full capitalize"
+                style={{
+                  background:
+                    block.chartType === type
+                      ? "var(--color-linear-bg-elevated)"
+                      : "transparent",
+                  color: "var(--color-linear-text-secondary)",
+                  boxShadow:
+                    block.chartType === type
+                      ? "var(--shadow-linear-sm)"
+                      : "none",
+                }}
               >
                 {type}
               </button>
-            ),
+            )
           )}
         </div>
       </div>
 
       {/* Chart */}
-      <div className="py-4">{renderChart()}</div>
+      <div className="py-2">{renderChart()}</div>
 
       {/* Data Editor */}
       <div className="space-y-2">
         <button
           onClick={() => setIsEditingData(!isEditingData)}
-          className="text-xs px-3 py-1 rounded"
+          className="text-xs px-3 py-1 rounded-full"
           style={{
             background: "var(--color-linear-bg-secondary)",
             color: "var(--color-linear-text-secondary)",
           }}
         >
-          {isEditingData ? "Hide Data" : "Edit Data"}
+          {isEditingData ? "Hide data" : "Edit data"}
         </button>
 
         {isEditingData && (
-          <div className="space-y-2 pt-2">
+          <div
+            className="space-y-2 pt-2 rounded-xl border p-3"
+            style={{
+              background: "var(--color-linear-bg-secondary)",
+              borderColor: "var(--color-linear-border-primary)",
+            }}
+          >
             {block.data.map((point, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
@@ -237,7 +257,7 @@ export function ChartBlock({ block, onChange }: ChartBlockProps) {
                     updateDataPoint(index, { label: e.target.value })
                   }
                   placeholder="Label"
-                  className="flex-1 px-2 py-1 text-sm border rounded"
+                  className="flex-1 px-2 py-1 text-sm border rounded-lg"
                   style={{ borderColor: "var(--color-linear-border-primary)" }}
                 />
                 <input
@@ -249,7 +269,7 @@ export function ChartBlock({ block, onChange }: ChartBlockProps) {
                     })
                   }
                   placeholder="Value"
-                  className="w-24 px-2 py-1 text-sm border rounded"
+                  className="w-24 px-2 py-1 text-sm border rounded-lg"
                   style={{ borderColor: "var(--color-linear-border-primary)" }}
                 />
                 <button
@@ -262,7 +282,7 @@ export function ChartBlock({ block, onChange }: ChartBlockProps) {
             ))}
             <button
               onClick={addDataPoint}
-              className="flex items-center gap-1 text-xs px-2 py-1 rounded"
+              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
               style={{
                 background: "var(--color-linear-accent-primary)",
                 color: "white",

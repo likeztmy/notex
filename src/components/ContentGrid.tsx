@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { FileTextIcon, StarIcon, TagIcon } from "lucide-react";
 import type { Content } from "~/types/content";
+import { getContentPreview } from "~/utils/contentText";
+import { formatRelativeDateShort } from "~/utils/dateFormat";
 
 interface ContentGridProps {
   content: Content[];
@@ -31,15 +33,17 @@ export function ContentGrid({
     );
   }
 
-  // Sort by last viewed, then by updated date
-  const sortedContent = [...content].sort((a, b) => {
-    if (a.lastViewed && b.lastViewed) {
-      return b.lastViewed - a.lastViewed;
-    }
-    if (a.lastViewed) return -1;
-    if (b.lastViewed) return 1;
-    return b.updatedAt - a.updatedAt;
-  });
+  const sortedContent = React.useMemo(() => {
+    // Sort by last viewed, then by updated date
+    return [...content].sort((a, b) => {
+      if (a.lastViewed && b.lastViewed) {
+        return b.lastViewed - a.lastViewed;
+      }
+      if (a.lastViewed) return -1;
+      if (b.lastViewed) return 1;
+      return b.updatedAt - a.updatedAt;
+    });
+  }, [content]);
 
   return (
     <div className="max-w-[1280px] mx-auto">
@@ -59,8 +63,14 @@ interface ContentGridCardProps {
 
 function ContentGridCard({ content, index }: ContentGridCardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
-  const preview = getContentPreview(content);
-  const updatedDate = formatDate(content.updatedAt);
+  const preview = React.useMemo(
+    () => getContentPreview(content, 120, "Empty document"),
+    [content]
+  );
+  const updatedDate = React.useMemo(
+    () => formatRelativeDateShort(content.updatedAt),
+    [content.updatedAt]
+  );
 
   return (
     <motion.div
@@ -75,12 +85,13 @@ function ContentGridCard({ content, index }: ContentGridCardProps) {
       <Link
         to="/editor"
         search={{ id: content.id }}
-        className="block p-5 rounded-xl transition-all duration-200"
+        className="block p-5 transition-all duration-200 content-grid-card"
         style={{
           background: isHovered
             ? "var(--color-linear-bg-elevated)"
             : "var(--color-linear-bg-primary)",
-          border: "1px solid var(--color-linear-border-primary)",
+          border: "1px solid var(--view-border)",
+          borderRadius: "var(--view-radius)",
           boxShadow: isHovered ? "var(--shadow-linear-md)" : "none",
           transform: isHovered ? "translateY(-2px)" : "none",
         }}
@@ -90,8 +101,13 @@ function ContentGridCard({ content, index }: ContentGridCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{ background: "var(--color-linear-bg-tertiary)" }}
+            className="flex items-center justify-center"
+            style={{
+              width: "var(--view-icon-size)",
+              height: "var(--view-icon-size)",
+              borderRadius: "var(--view-icon-radius)",
+              background: "var(--view-icon-bg)",
+            }}
           >
             <FileTextIcon
               className="h-4 w-4"
@@ -101,24 +117,29 @@ function ContentGridCard({ content, index }: ContentGridCardProps) {
           {content.starred && (
             <StarIcon
               className="h-4 w-4 fill-current"
-              style={{ color: "var(--color-linear-text-tertiary)" }}
+              style={{ color: "var(--color-linear-warning)" }}
             />
           )}
         </div>
 
         {/* Title */}
         <h3
-          className="text-base font-medium mb-2 line-clamp-2"
-          style={{ color: "var(--color-linear-text-primary)" }}
+          className="mb-2 line-clamp-2"
+          style={{
+            color: "var(--color-linear-text-primary)",
+            fontSize: "var(--view-title-size)",
+            fontWeight: "var(--view-title-weight)",
+          }}
         >
           {content.title || "Untitled"}
         </h3>
 
         {/* Preview */}
         <p
-          className="text-sm mb-3 line-clamp-3"
+          className="mb-3 line-clamp-3"
           style={{
-            color: "var(--color-linear-text-tertiary)",
+            color: "var(--view-preview-color)",
+            fontSize: "var(--view-preview-size)",
             lineHeight: 1.5,
           }}
         >
@@ -133,7 +154,7 @@ function ContentGridCard({ content, index }: ContentGridCardProps) {
                 key={tag}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs"
                 style={{
-                  background: "var(--color-linear-bg-tertiary)",
+                  background: "var(--view-icon-bg)",
                   color: "var(--color-linear-text-secondary)",
                 }}
               >
@@ -154,57 +175,14 @@ function ContentGridCard({ content, index }: ContentGridCardProps) {
 
         {/* Footer */}
         <div
-          className="text-xs"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
+          style={{
+            color: "var(--view-meta-color)",
+            fontSize: "var(--view-meta-size)",
+          }}
         >
           {updatedDate}
         </div>
       </Link>
     </motion.div>
   );
-}
-
-// Helper: Get content preview text
-function getContentPreview(content: Content): string {
-  if (content.docContent) {
-    try {
-      const extractText = (node: any): string => {
-        if (node.text) return node.text;
-        if (node.content) {
-          return node.content.map(extractText).join(" ");
-        }
-        return "";
-      };
-      const text = extractText(content.docContent).trim();
-      const preview = text.slice(0, 120);
-      return preview || "Empty document";
-    } catch {
-      return "Empty document";
-    }
-  }
-
-  return "No content";
-}
-
-// Helper: Format date to Chinese style
-function formatDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffInDays = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffInDays === 0) return "Today";
-  if (diffInDays === 1) return "Yesterday";
-  if (diffInDays < 7) return `${diffInDays} days ago`;
-
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  const day = date.getDate();
-  const year = date.getFullYear();
-  const currentYear = now.getFullYear();
-
-  if (year === currentYear) {
-    return `${month} ${day}`;
-  }
-  return `${month} ${day}, ${year}`;
 }

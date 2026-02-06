@@ -1,11 +1,8 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tag, X, Plus, Check } from "lucide-react";
-import {
-  getAllTags,
-  addTagToContent,
-  removeTagFromContent,
-} from "~/utils/contentStorage";
+import { Tag, X, Plus } from "lucide-react";
+import { useContentStore } from "~/store/contentStore";
+import { getAllTagsFromContent } from "~/utils/contentQuery";
 
 interface TagInputProps {
   contentId: string;
@@ -18,21 +15,31 @@ export function TagInput({
   currentTags = [],
   onTagsChange,
 }: TagInputProps) {
+  const content = useContentStore((state) => state.content);
+  const addTagToContent = useContentStore((state) => state.addTagToContent);
+  const removeTagFromContent = useContentStore(
+    (state) => state.removeTagFromContent
+  );
   const [isAdding, setIsAdding] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [suggestions, setSuggestions] = React.useState<string[]>([]);
   const [tags, setTags] = React.useState<string[]>(currentTags);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
+  const areTagsEqual = React.useCallback((a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    return a.every((tag, index) => tag === b[index]);
+  }, []);
+
   // Update local tags when prop changes
   React.useEffect(() => {
-    setTags(currentTags);
-  }, [currentTags]);
+    setTags((prev) => (areTagsEqual(prev, currentTags) ? prev : currentTags));
+  }, [areTagsEqual, currentTags]);
 
   // Get suggestions when input changes
   React.useEffect(() => {
     if (inputValue.trim()) {
-      const allTags = getAllTags();
+      const allTags = getAllTagsFromContent(content);
       const filtered = allTags.filter(
         (tag) =>
           tag.toLowerCase().includes(inputValue.toLowerCase()) &&
@@ -42,7 +49,7 @@ export function TagInput({
     } else {
       setSuggestions([]);
     }
-  }, [inputValue, tags]);
+  }, [inputValue, tags, content]);
 
   // Focus input when adding
   React.useEffect(() => {
@@ -186,6 +193,11 @@ export function TagDialog({
   currentTags = [],
   onTagsChange,
 }: TagDialogProps) {
+  const content = useContentStore((state) => state.content);
+  const addTagToContent = useContentStore((state) => state.addTagToContent);
+  const removeTagFromContent = useContentStore(
+    (state) => state.removeTagFromContent
+  );
   const [inputValue, setInputValue] = React.useState("");
   const [tags, setTags] = React.useState<string[]>(currentTags);
   const [allTags, setAllTags] = React.useState<string[]>([]);
@@ -195,10 +207,10 @@ export function TagDialog({
   React.useEffect(() => {
     if (isOpen) {
       setTags(currentTags);
-      setAllTags(getAllTags());
+      setAllTags(getAllTagsFromContent(content));
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen, currentTags]);
+  }, [isOpen, currentTags, content]);
 
   const handleAddTag = (tag: string) => {
     const trimmedTag = tag.trim().toLowerCase();

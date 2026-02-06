@@ -6,6 +6,7 @@ import type {
   EmbedBlock as EmbedBlockType,
   EmbedProvider,
 } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component
 const EmbedBlockComponent = React.lazy(() =>
@@ -15,7 +16,12 @@ const EmbedBlockComponent = React.lazy(() =>
 );
 
 // NodeView component
-function EmbedBlockView({ node, updateAttributes }: NodeViewProps) {
+function EmbedBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: EmbedBlockType = {
     id: "",
     type: "embed",
@@ -36,7 +42,12 @@ function EmbedBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="embed-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="embed-block"
+      data-label="Embed"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div
