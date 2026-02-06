@@ -12,11 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StarredRouteImport } from './routes/starred'
 import { Route as SharedRouteImport } from './routes/shared'
 import { Route as RecentRouteImport } from './routes/recent'
+import { Route as PublicRouteImport } from './routes/public'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TagsTagNameRouteImport } from './routes/tags.$tagName'
+import { Route as SeriesSeriesIdRouteImport } from './routes/series.$seriesId'
+import { Route as PublicProfileRouteImport } from './routes/public.profile'
+import { Route as PublicContentIdRouteImport } from './routes/public.$contentId'
 import { Route as FoldersFolderIdRouteImport } from './routes/folders.$folderId'
 
 const StarredRoute = StarredRouteImport.update({
@@ -32,6 +37,16 @@ const SharedRoute = SharedRouteImport.update({
 const RecentRoute = RecentRouteImport.update({
   id: '/recent',
   path: '/recent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/public',
+  path: '/public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EditorRoute = EditorRouteImport.update({
@@ -59,6 +74,21 @@ const TagsTagNameRoute = TagsTagNameRouteImport.update({
   path: '/tags/$tagName',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SeriesSeriesIdRoute = SeriesSeriesIdRouteImport.update({
+  id: '/series/$seriesId',
+  path: '/series/$seriesId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicProfileRoute = PublicProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicContentIdRoute = PublicContentIdRouteImport.update({
+  id: '/$contentId',
+  path: '/$contentId',
+  getParentRoute: () => PublicRoute,
+} as any)
 const FoldersFolderIdRoute = FoldersFolderIdRouteImport.update({
   id: '/folders/$folderId',
   path: '/folders/$folderId',
@@ -70,10 +100,15 @@ export interface FileRoutesByFullPath {
   '/content': typeof ContentRoute
   '/docs': typeof DocsRoute
   '/editor': typeof EditorRoute
+  '/profile': typeof ProfileRoute
+  '/public': typeof PublicRouteWithChildren
   '/recent': typeof RecentRoute
   '/shared': typeof SharedRoute
   '/starred': typeof StarredRoute
   '/folders/$folderId': typeof FoldersFolderIdRoute
+  '/public/$contentId': typeof PublicContentIdRoute
+  '/public/profile': typeof PublicProfileRoute
+  '/series/$seriesId': typeof SeriesSeriesIdRoute
   '/tags/$tagName': typeof TagsTagNameRoute
 }
 export interface FileRoutesByTo {
@@ -81,10 +116,15 @@ export interface FileRoutesByTo {
   '/content': typeof ContentRoute
   '/docs': typeof DocsRoute
   '/editor': typeof EditorRoute
+  '/profile': typeof ProfileRoute
+  '/public': typeof PublicRouteWithChildren
   '/recent': typeof RecentRoute
   '/shared': typeof SharedRoute
   '/starred': typeof StarredRoute
   '/folders/$folderId': typeof FoldersFolderIdRoute
+  '/public/$contentId': typeof PublicContentIdRoute
+  '/public/profile': typeof PublicProfileRoute
+  '/series/$seriesId': typeof SeriesSeriesIdRoute
   '/tags/$tagName': typeof TagsTagNameRoute
 }
 export interface FileRoutesById {
@@ -93,10 +133,15 @@ export interface FileRoutesById {
   '/content': typeof ContentRoute
   '/docs': typeof DocsRoute
   '/editor': typeof EditorRoute
+  '/profile': typeof ProfileRoute
+  '/public': typeof PublicRouteWithChildren
   '/recent': typeof RecentRoute
   '/shared': typeof SharedRoute
   '/starred': typeof StarredRoute
   '/folders/$folderId': typeof FoldersFolderIdRoute
+  '/public/$contentId': typeof PublicContentIdRoute
+  '/public/profile': typeof PublicProfileRoute
+  '/series/$seriesId': typeof SeriesSeriesIdRoute
   '/tags/$tagName': typeof TagsTagNameRoute
 }
 export interface FileRouteTypes {
@@ -106,10 +151,15 @@ export interface FileRouteTypes {
     | '/content'
     | '/docs'
     | '/editor'
+    | '/profile'
+    | '/public'
     | '/recent'
     | '/shared'
     | '/starred'
     | '/folders/$folderId'
+    | '/public/$contentId'
+    | '/public/profile'
+    | '/series/$seriesId'
     | '/tags/$tagName'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,10 +167,15 @@ export interface FileRouteTypes {
     | '/content'
     | '/docs'
     | '/editor'
+    | '/profile'
+    | '/public'
     | '/recent'
     | '/shared'
     | '/starred'
     | '/folders/$folderId'
+    | '/public/$contentId'
+    | '/public/profile'
+    | '/series/$seriesId'
     | '/tags/$tagName'
   id:
     | '__root__'
@@ -128,10 +183,15 @@ export interface FileRouteTypes {
     | '/content'
     | '/docs'
     | '/editor'
+    | '/profile'
+    | '/public'
     | '/recent'
     | '/shared'
     | '/starred'
     | '/folders/$folderId'
+    | '/public/$contentId'
+    | '/public/profile'
+    | '/series/$seriesId'
     | '/tags/$tagName'
   fileRoutesById: FileRoutesById
 }
@@ -140,10 +200,13 @@ export interface RootRouteChildren {
   ContentRoute: typeof ContentRoute
   DocsRoute: typeof DocsRoute
   EditorRoute: typeof EditorRoute
+  ProfileRoute: typeof ProfileRoute
+  PublicRoute: typeof PublicRouteWithChildren
   RecentRoute: typeof RecentRoute
   SharedRoute: typeof SharedRoute
   StarredRoute: typeof StarredRoute
   FoldersFolderIdRoute: typeof FoldersFolderIdRoute
+  SeriesSeriesIdRoute: typeof SeriesSeriesIdRoute
   TagsTagNameRoute: typeof TagsTagNameRoute
 }
 
@@ -168,6 +231,20 @@ declare module '@tanstack/react-router' {
       path: '/recent'
       fullPath: '/recent'
       preLoaderRoute: typeof RecentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public': {
+      id: '/public'
+      path: '/public'
+      fullPath: '/public'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/editor': {
@@ -205,6 +282,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/series/$seriesId': {
+      id: '/series/$seriesId'
+      path: '/series/$seriesId'
+      fullPath: '/series/$seriesId'
+      preLoaderRoute: typeof SeriesSeriesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public/profile': {
+      id: '/public/profile'
+      path: '/profile'
+      fullPath: '/public/profile'
+      preLoaderRoute: typeof PublicProfileRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/public/$contentId': {
+      id: '/public/$contentId'
+      path: '/$contentId'
+      fullPath: '/public/$contentId'
+      preLoaderRoute: typeof PublicContentIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/folders/$folderId': {
       id: '/folders/$folderId'
       path: '/folders/$folderId'
@@ -215,15 +313,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PublicRouteChildren {
+  PublicContentIdRoute: typeof PublicContentIdRoute
+  PublicProfileRoute: typeof PublicProfileRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicContentIdRoute: PublicContentIdRoute,
+  PublicProfileRoute: PublicProfileRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContentRoute: ContentRoute,
   DocsRoute: DocsRoute,
   EditorRoute: EditorRoute,
+  ProfileRoute: ProfileRoute,
+  PublicRoute: PublicRouteWithChildren,
   RecentRoute: RecentRoute,
   SharedRoute: SharedRoute,
   StarredRoute: StarredRoute,
   FoldersFolderIdRoute: FoldersFolderIdRoute,
+  SeriesSeriesIdRoute: SeriesSeriesIdRoute,
   TagsTagNameRoute: TagsTagNameRoute,
 }
 export const routeTree = rootRouteImport

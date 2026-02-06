@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
@@ -6,16 +7,21 @@ import type {
   CalloutBlock as CalloutBlockType,
   CalloutType,
 } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Callout colors configuration
-const CALLOUT_COLORS: Record<
+const CALLOUT_STYLES: Record<
   CalloutType,
-  { bg: string; border: string; icon: string }
+  {
+    bg: string;
+    border: string;
+    Icon: React.ComponentType<{ className?: string }>;
+  }
 > = {
-  info: { bg: "#e0f2fe", border: "#0ea5e9", icon: "ℹ️" },
-  warning: { bg: "#fef3c7", border: "#f59e0b", icon: "⚠️" },
-  success: { bg: "#dcfce7", border: "#10b981", icon: "✅" },
-  error: { bg: "#fee2e2", border: "#ef4444", icon: "❌" },
+  info: { bg: "#e0f2fe", border: "#0ea5e9", Icon: Info },
+  warning: { bg: "#fef3c7", border: "#f59e0b", Icon: AlertTriangle },
+  success: { bg: "#dcfce7", border: "#10b981", Icon: CheckCircle2 },
+  error: { bg: "#fee2e2", border: "#ef4444", Icon: XCircle },
 };
 
 // Inline CalloutBlock component (lightweight, no lazy loading needed)
@@ -26,37 +32,41 @@ function CalloutBlockComponent({
   block: CalloutBlockType;
   onChange: (updates: Partial<CalloutBlockType>) => void;
 }) {
-  const calloutStyle = CALLOUT_COLORS[block.calloutType || "info"];
+  const calloutStyle = CALLOUT_STYLES[block.calloutType || "info"];
+  const options: { value: CalloutType; label: string }[] = [
+    { value: "info", label: "Info" },
+    { value: "warning", label: "Warning" },
+    { value: "success", label: "Success" },
+    { value: "error", label: "Error" },
+  ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center gap-2">
-        <select
-          value={block.calloutType || "info"}
-          onChange={(e) =>
-            onChange({ calloutType: e.target.value as CalloutType })
-          }
-          className="text-xs px-2 py-1 rounded border"
-          style={{
-            borderColor: "var(--color-linear-border-primary)",
-            color: "var(--color-linear-text-secondary)",
-          }}
-        >
-          <option value="info">Info</option>
-          <option value="warning">Warning</option>
-          <option value="success">Success</option>
-          <option value="error">Error</option>
-        </select>
-        <input
-          type="text"
-          value={block.emoji || ""}
-          onChange={(e) => onChange({ emoji: e.target.value.slice(0, 2) })}
-          placeholder="Emoji"
-          className="w-16 text-xs px-2 py-1 border rounded"
-          style={{ borderColor: "var(--color-linear-border-primary)" }}
-          maxLength={2}
-        />
+      <div
+        className="flex items-center gap-1 rounded-full p-1 w-fit"
+        style={{ background: "var(--color-linear-bg-tertiary)" }}
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => onChange({ calloutType: option.value })}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{
+              background:
+                block.calloutType === option.value
+                  ? "var(--color-linear-bg-elevated)"
+                  : "transparent",
+              color: "var(--color-linear-text-secondary)",
+              boxShadow:
+                block.calloutType === option.value
+                  ? "var(--shadow-linear-sm)"
+                  : "none",
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {/* Callout Content */}
@@ -68,7 +78,15 @@ function CalloutBlockComponent({
         }}
       >
         <div className="flex items-start gap-2">
-          <span className="text-xl">{block.emoji || calloutStyle.icon}</span>
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              background: "rgba(0, 0, 0, 0.06)",
+              color: "var(--color-linear-text-primary)",
+            }}
+          >
+            <calloutStyle.Icon className="w-4 h-4" />
+          </div>
           <div className="flex-1">
             <input
               type="text"
@@ -93,7 +111,12 @@ function CalloutBlockComponent({
 }
 
 // NodeView component
-function CalloutBlockView({ node, updateAttributes }: NodeViewProps) {
+function CalloutBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: CalloutBlockType = {
     id: "",
     type: "callout",
@@ -114,7 +137,12 @@ function CalloutBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="callout-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="callout-block"
+      data-label="Callout"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <CalloutBlockComponent block={block} onChange={handleChange} />
     </NodeViewWrapper>
   );

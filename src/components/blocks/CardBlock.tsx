@@ -27,8 +27,8 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
 
   const getCardStyle = (): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
-      padding: "24px",
-      borderRadius: "12px",
+      padding: "20px",
+      borderRadius: "14px",
       minHeight: "120px",
     };
 
@@ -62,27 +62,28 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Title Input */}
-        <input
-          type="text"
-          value={block.title || ""}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Card title (optional)"
-          className="flex-1 text-sm font-medium border-none outline-none bg-transparent"
-          style={{ color: "var(--color-linear-text-primary)" }}
-        />
-
-        {/* Style Selector */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={block.title || ""}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="Card title"
+            className="w-full text-sm font-semibold border-none outline-none bg-transparent"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          />
+          <div className="block-label">Card</div>
+        </div>
         <select
           value={block.cardStyle || "default"}
           onChange={(e) => onChange({ cardStyle: e.target.value as CardStyle })}
-          className="text-xs px-2 py-1 rounded border"
+          className="text-xs px-2 py-1 rounded-full border"
           style={{
             borderColor: "var(--color-linear-border-primary)",
             color: "var(--color-linear-text-secondary)",
+            background: "var(--color-linear-bg-elevated)",
           }}
         >
           {CARD_STYLES.map((style) => (
@@ -100,7 +101,7 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
             <button
               key={index}
               onClick={() => onChange({ bgColor: gradient })}
-              className="w-8 h-8 rounded border-2 hover:scale-110 transition-transform"
+              className="w-7 h-7 rounded-full border-2 hover:scale-105 transition-transform"
               style={{
                 background: gradient,
                 borderColor:
@@ -118,13 +119,10 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
         onClick={() => !isEditing && setIsEditing(true)}
         className="cursor-text transition-all"
       >
-        {/* Emoji */}
-        {block.emoji && <div className="text-4xl mb-3">{block.emoji}</div>}
-
         {/* Title */}
         {block.title && (
           <h4
-            className="text-lg font-semibold mb-2"
+            className="text-base font-semibold mb-2"
             style={block.cardStyle === "gradient" ? { color: "white" } : {}}
           >
             {block.title}
@@ -138,7 +136,7 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
             onChange={(e) => onChange({ content: e.target.value })}
             onBlur={() => setIsEditing(false)}
             autoFocus
-            className="w-full min-h-[80px] bg-transparent border-none outline-none resize-none"
+            className="w-full min-h-[80px] bg-transparent border-none outline-none resize-none text-sm"
             style={
               block.cardStyle === "gradient"
                 ? { color: "white" }
@@ -148,7 +146,7 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
           />
         ) : (
           <p
-            className="whitespace-pre-wrap"
+            className="whitespace-pre-wrap text-sm leading-relaxed"
             style={
               block.cardStyle === "gradient"
                 ? { color: "rgba(255,255,255,0.9)" }
@@ -158,25 +156,6 @@ export function CardBlock({ block, onChange }: CardBlockProps) {
             {block.content || "Click to add content..."}
           </p>
         )}
-      </div>
-
-      {/* Emoji Picker */}
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={block.emoji || ""}
-          onChange={(e) => onChange({ emoji: e.target.value.slice(0, 2) })}
-          placeholder="Add emoji (e.g., 💡)"
-          className="w-32 text-xs px-2 py-1 border rounded"
-          style={{ borderColor: "var(--color-linear-border-primary)" }}
-          maxLength={2}
-        />
-        <span
-          className="text-xs"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
-        >
-          Quick: 💡 📝 ⭐ 🎯 ✨ 🚀
-        </span>
       </div>
     </div>
   );

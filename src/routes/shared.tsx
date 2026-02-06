@@ -3,7 +3,8 @@ import * as React from "react";
 import { ContentList } from "~/components/ContentList";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-import { getSharedContent } from "~/utils/contentStorage";
+import { useContentStore } from "~/store/contentStore";
+import { getSharedContentFromList } from "~/utils/contentQuery";
 import {
   LayoutGridIcon,
   ListIcon,
@@ -16,11 +17,11 @@ export const Route = createFileRoute("/shared")({
 });
 
 function SharedPage() {
-  const [content, setContent] = React.useState(() => getSharedContent());
-
-  React.useEffect(() => {
-    setContent(getSharedContent());
-  }, []);
+  const content = useContentStore((state) => state.content);
+  const sharedContent = React.useMemo(
+    () => getSharedContentFromList(content),
+    [content]
+  );
 
   return (
     <div
@@ -44,7 +45,7 @@ function SharedPage() {
 
       <div className="p-8">
         <ContentList
-          content={content}
+          content={sharedContent}
           emptyMessage="No shared content yet. When others share with you, it'll appear here."
           showMode={true}
         />

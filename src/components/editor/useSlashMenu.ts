@@ -13,30 +13,8 @@ export interface UseSlashMenuReturn {
   setSearchQuery: (q: string) => void;
   setSelectedIndex: (index: number | ((prev: number) => number)) => void;
   getHandleKeyDown: (
-    handlerRefs: SlashMenuHandlerRefs,
+    handlerRefs: SlashMenuHandlerRefs
   ) => (view: any, event: KeyboardEvent) => boolean;
-}
-
-function createVirtualElement(coords: {
-  left: number;
-  top: number;
-}): VirtualElement {
-  return {
-    getBoundingClientRect: () =>
-      Object.assign(
-        {
-          width: 0,
-          height: 0,
-          x: coords.left,
-          y: coords.top,
-          top: coords.top,
-          left: coords.left,
-          right: coords.left,
-          bottom: coords.top,
-        },
-        { toJSON: () => ({}) },
-      ) as DOMRect,
-  };
 }
 
 export function useSlashMenu(): UseSlashMenuReturn {
@@ -73,12 +51,11 @@ export function useSlashMenu(): UseSlashMenuReturn {
         const { $from } = selection;
 
         if (event.key === "/" && !showRef.current) {
-          const coords = view.coordsAtPos($from.pos);
-          setReferenceElementRef.current(createVirtualElement(coords));
           showRef.current = true;
           setShowRef.current(true);
           setSelectedIndexRef.current(0);
           setSearchQueryRef.current("");
+          setReferenceElementRef.current(null);
           return false;
         }
 
@@ -92,7 +69,7 @@ export function useSlashMenu(): UseSlashMenuReturn {
           case "ArrowUp":
             event.preventDefault();
             setSelectedIndexRef.current((prev: number) =>
-              prev === 0 ? 0 : prev - 1,
+              prev === 0 ? 0 : prev - 1
             );
             return true;
           case "Enter":
@@ -118,7 +95,7 @@ export function useSlashMenu(): UseSlashMenuReturn {
             return false;
         }
       },
-    [],
+    []
   );
 
   return {

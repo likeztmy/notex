@@ -1,8 +1,8 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FileTextIcon,
   MoreHorizontalIcon,
   StarIcon,
   TrashIcon,
@@ -12,11 +12,9 @@ import {
   ArrowDownIcon,
 } from "lucide-react";
 import type { Content } from "~/types/content";
-import {
-  deleteContent,
-  toggleStarred,
-  duplicateContent,
-} from "~/utils/contentStorage";
+import { useContentStore } from "~/store/contentStore";
+import { getContentPreview } from "~/utils/contentText";
+import { formatRelativeTimeLong } from "~/utils/dateFormat";
 import { MoveToFolderDialog } from "./MoveToFolderDialog";
 import { TagDialog } from "./TagInput";
 import { cn } from "~/lib/utils";
@@ -86,23 +84,31 @@ interface ContentTableRowProps {
 
 function ContentTableRow({ content, index }: ContentTableRowProps) {
   const navigate = useNavigate();
-  const [isHovered, setIsHovered] = React.useState(false);
+  const toggleStarred = useContentStore((state) => state.toggleStarred);
+  const deleteContent = useContentStore((state) => state.deleteContent);
+  const duplicateContent = useContentStore((state) => state.duplicateContent);
   const [showActions, setShowActions] = React.useState(false);
   const [showMoveDialog, setShowMoveDialog] = React.useState(false);
   const [showTagDialog, setShowTagDialog] = React.useState(false);
+  const [menuPosition, setMenuPosition] = React.useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const menuButtonRef = React.useRef<HTMLButtonElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
 
-  const preview = getContentPreview(content);
+  const preview = getContentPreview(content, 100, "No additional text");
   const lastViewedDate = content.lastViewed
-    ? formatRelativeTime(content.lastViewed)
+    ? formatRelativeTimeLong(content.lastViewed)
     : "-";
-  const updatedDate = formatRelativeTime(content.updatedAt);
-  const createdDate = formatRelativeTime(content.createdAt);
+  const updatedDate = formatRelativeTimeLong(content.updatedAt);
+  const createdDate = formatRelativeTimeLong(content.createdAt);
 
   const handleToggleStar = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleStarred(content.id);
-    window.location.reload();
+    setShowActions(false);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -110,7 +116,7 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this document?")) {
       deleteContent(content.id);
-      window.location.reload();
+      setShowActions(false);
     }
   };
 
@@ -138,6 +144,41 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
     setShowActions(false);
   };
 
+  const updateMenuPosition = React.useCallback(() => {
+    const button = menuButtonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const menuWidth = menuRef.current?.offsetWidth || 160;
+    const left = Math.max(16, rect.right - menuWidth);
+    const top = rect.bottom + 6;
+    setMenuPosition({ top, left });
+  }, []);
+
+  React.useEffect(() => {
+    if (!showActions) return;
+    updateMenuPosition();
+    const handleScroll = () => updateMenuPosition();
+    const handleResize = () => updateMenuPosition();
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [showActions, updateMenuPosition]);
+
+  React.useEffect(() => {
+    if (!showActions) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (menuButtonRef.current?.contains(target)) return;
+      setShowActions(false);
+    };
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, [showActions]);
+
   return (
     <>
       <motion.div
@@ -148,14 +189,13 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
           delay: index * 0.05,
           ease: [0.22, 1, 0.36, 1],
         }}
+        style={{ position: "relative", zIndex: showActions ? 60 : 0 }}
       >
         <Link
           to="/editor"
           search={{ id: content.id }}
-          className={styles.tableRow}
-          onMouseEnter={() => setIsHovered(true)}
+          className={cn(styles.tableRow, showActions && styles.tableRowActive)}
           onMouseLeave={() => {
-            setIsHovered(false);
             if (!showMoveDialog && !showTagDialog) {
               setShowActions(false);
             }
@@ -205,6 +245,7 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
             <div style={{ position: "relative" }}>
               <motion.button
                 className={styles.moreButton}
+                ref={menuButtonRef}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -215,58 +256,68 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
               >
                 <MoreHorizontalIcon className="h-4 w-4" />
               </motion.button>
-              <AnimatePresence>
-                {showActions && (
-                  <motion.div
-                    className={styles.actionsMenu}
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <motion.button
-                      onClick={handleToggleStar}
-                      className={styles.menuButton}
-                      whileHover={{ x: 2 }}
+              {showActions &&
+                menuPosition &&
+                createPortal(
+                  <AnimatePresence>
+                    <motion.div
+                      ref={menuRef}
+                      className={styles.actionsMenu}
+                      initial={{ opacity: 0, scale: 0.98, y: -6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98, y: -6 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        position: "fixed",
+                        top: menuPosition.top,
+                        left: menuPosition.left,
+                        zIndex: 9999,
+                      }}
                     >
-                      <StarIcon />
-                      {content.starred ? "Unstar" : "Star"}
-                    </motion.button>
-                    <motion.button
-                      onClick={handleDuplicate}
-                      className={styles.menuButton}
-                      whileHover={{ x: 2 }}
-                    >
-                      <CopyIcon />
-                      Duplicate
-                    </motion.button>
-                    <motion.button
-                      onClick={handleMoveToFolder}
-                      className={styles.menuButton}
-                      whileHover={{ x: 2 }}
-                    >
-                      <FolderIcon />
-                      Move to Folder
-                    </motion.button>
-                    <motion.button
-                      onClick={handleManageTags}
-                      className={styles.menuButton}
-                      whileHover={{ x: 2 }}
-                    >
-                      <TagIcon />
-                      Manage Tags
-                    </motion.button>
-                    <motion.button
-                      onClick={handleDelete}
-                      className={cn(styles.menuButton, styles.delete)}
-                      whileHover={{ x: 2 }}
-                    >
-                      <TrashIcon />
-                      Delete
-                    </motion.button>
-                  </motion.div>
+                      <motion.button
+                        onClick={handleToggleStar}
+                        className={styles.menuButton}
+                        whileHover={{ x: 2 }}
+                      >
+                        <StarIcon />
+                        {content.starred ? "Unstar" : "Star"}
+                      </motion.button>
+                      <motion.button
+                        onClick={handleDuplicate}
+                        className={styles.menuButton}
+                        whileHover={{ x: 2 }}
+                      >
+                        <CopyIcon />
+                        Duplicate
+                      </motion.button>
+                      <motion.button
+                        onClick={handleMoveToFolder}
+                        className={styles.menuButton}
+                        whileHover={{ x: 2 }}
+                      >
+                        <FolderIcon />
+                        Move to Folder
+                      </motion.button>
+                      <motion.button
+                        onClick={handleManageTags}
+                        className={styles.menuButton}
+                        whileHover={{ x: 2 }}
+                      >
+                        <TagIcon />
+                        Manage Tags
+                      </motion.button>
+                      <motion.button
+                        onClick={handleDelete}
+                        className={cn(styles.menuButton, styles.delete)}
+                        whileHover={{ x: 2 }}
+                      >
+                        <TrashIcon />
+                        Delete
+                      </motion.button>
+                    </motion.div>
+                  </AnimatePresence>,
+                  document.body
                 )}
-              </AnimatePresence>
             </div>
           </div>
         </Link>
@@ -278,7 +329,6 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
         onClose={() => setShowMoveDialog(false)}
         contentId={content.id}
         currentFolderId={content.folderId}
-        onMoved={() => window.location.reload()}
       />
 
       <TagDialog
@@ -286,67 +336,7 @@ function ContentTableRow({ content, index }: ContentTableRowProps) {
         onClose={() => setShowTagDialog(false)}
         contentId={content.id}
         currentTags={content.tags}
-        onTagsChange={() => window.location.reload()}
       />
     </>
   );
-}
-
-// Helper: Get content preview text
-function getContentPreview(content: Content): string {
-  if (content.docContent) {
-    try {
-      const extractText = (node: any): string => {
-        if (node.text) return node.text;
-        if (node.content) {
-          return node.content.map(extractText).join(" ");
-        }
-        return "";
-      };
-      const text = extractText(content.docContent).trim();
-      const preview = text.slice(0, 100);
-      return preview || "No additional text";
-    } catch {
-      return "No additional text";
-    }
-  }
-
-  return "No additional text";
-}
-
-// Helper: Format relative time
-function formatRelativeTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "Just Now";
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
-  }
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-  }
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) {
-    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-  }
-
-  if (diffInDays < 30) {
-    const weeks = Math.floor(diffInDays / 7);
-    return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
-  }
-
-  const diffInMonths = Math.floor(diffInDays / 30);
-  if (diffInMonths < 12) {
-    return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
-  }
-
-  const diffInYears = Math.floor(diffInDays / 365);
-  return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
 }

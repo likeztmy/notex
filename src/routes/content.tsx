@@ -4,16 +4,12 @@ import { ContentTable } from "~/components/ContentTable";
 import { ContentGrid } from "~/components/ContentGrid";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-import { loadContent } from "~/utils/contentStorage";
-import { useSearchModalContext } from "~/routes/__root";
+import { useContentStore } from "~/store/contentStore";
+import { extractPlainText } from "~/utils/contentText";
 import {
   LayoutGridIcon,
   ListIcon,
   ArrowUpDownIcon,
-  StarIcon,
-  ClockIcon,
-  SearchIcon,
-  PlusIcon,
   Crown,
   MoreHorizontal,
 } from "lucide-react";
@@ -24,18 +20,12 @@ export const Route = createFileRoute("/content")({
 
 function ContentPage() {
   const navigate = useNavigate();
-  const [content, setContent] = React.useState(() => loadContent());
+  const content = useContentStore((state) => state.content);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState<"updated" | "created" | "title">(
     "updated"
   );
-  const searchModal = useSearchModalContext();
-
-  // Refresh content when component mounts
-  React.useEffect(() => {
-    setContent(loadContent());
-  }, []);
 
   const handleNewDocument = () => {
     navigate({
@@ -60,21 +50,8 @@ function ContentPage() {
           return true;
 
         // Search in document content
-        if (item.docContent) {
-          try {
-            const extractText = (node: any): string => {
-              if (node.text) return node.text;
-              if (node.content) {
-                return node.content.map(extractText).join(" ");
-              }
-              return "";
-            };
-            const text = extractText(item.docContent).toLowerCase();
-            if (text.includes(query)) return true;
-          } catch {
-            // Ignore parsing errors
-          }
-        }
+        const text = extractPlainText(item.docContent).toLowerCase();
+        if (text && text.includes(query)) return true;
 
         return false;
       });

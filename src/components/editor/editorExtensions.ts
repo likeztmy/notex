@@ -7,6 +7,7 @@ import {
   EmbedBlockExtension,
   CardBlockExtension,
 } from "./extensions";
+import DragHandle from "@tiptap/extension-drag-handle";
 
 /**
  * TipTap editor extensions config.
@@ -16,31 +17,32 @@ export function getEditorExtensions(deps: {
   StarterKit: any;
   CodeBlockLowlight: any;
   Typography: any;
-  Link: any;
   TaskList: any;
   TaskItem: any;
   Highlight: any;
   Markdown: any;
   Placeholder: any;
   lowlight: any;
+  enableDragHandle?: boolean;
 }) {
   const {
     StarterKit,
     CodeBlockLowlight,
     Typography,
-    Link,
     TaskList,
     TaskItem,
     Highlight,
     Markdown,
     Placeholder,
     lowlight,
+    enableDragHandle = true,
   } = deps;
 
   return [
     StarterKit.configure({
       codeBlock: false,
-      heading: { levels: [1, 2, 3, 4, 5, 6] },
+      heading: { levels: [1, 2, 3] },
+      link: false,
       blockquote: {
         HTMLAttributes: { class: "border-l-4 pl-4 italic opacity-80" },
       },
@@ -50,10 +52,6 @@ export function getEditorExtensions(deps: {
       HTMLAttributes: { class: "rounded-lg p-4 font-mono text-sm my-4" },
     }),
     Typography,
-    Link.configure({
-      openOnClick: false,
-      HTMLAttributes: { class: "underline cursor-pointer" },
-    }),
     TaskList.configure({ HTMLAttributes: { class: "list-none pl-0" } }),
     TaskItem.configure({
       HTMLAttributes: { class: "flex items-start gap-2 mb-2" },
@@ -77,8 +75,25 @@ export function getEditorExtensions(deps: {
       placeholder: ({ node }: { node: any }) =>
         node.type.name === "heading"
           ? `Heading ${node.attrs.level}`
-          : 'Type "/" for commands...',
+          : 'Type "/" for blocks or just start writing...',
     }),
+    ...(enableDragHandle
+      ? [
+          DragHandle.configure({
+            render: () => {
+              const handle = document.createElement("div");
+              handle.className = "drag-handle tiptap-drag-handle";
+              handle.setAttribute("data-drag-handle", "");
+              handle.setAttribute("aria-label", "Drag block");
+              handle.innerHTML = "⋮⋮";
+              return handle;
+            },
+            computePositionConfig: {
+              placement: "right-start",
+            },
+          }),
+        ]
+      : []),
     // Advanced Block Extensions
     TasksBlockExtension,
     HabitsBlockExtension,

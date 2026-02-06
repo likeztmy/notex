@@ -4,8 +4,8 @@ import { ContentTable } from "~/components/ContentTable";
 import { ContentGrid } from "~/components/ContentGrid";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-import { getStarredContent } from "~/utils/contentStorage";
-import { useSearchModalContext } from "~/routes/__root";
+import { useContentStore } from "~/store/contentStore";
+import { getStarredContentFromList } from "~/utils/contentQuery";
 import {
   LayoutGridIcon,
   ListIcon,
@@ -19,20 +19,19 @@ export const Route = createFileRoute("/starred")({
 });
 
 function StarredPage() {
-  const [content, setContent] = React.useState(() => getStarredContent());
+  const content = useContentStore((state) => state.content);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = React.useState<"updated" | "created" | "title">(
     "updated"
   );
-  const searchModal = useSearchModalContext();
-
-  React.useEffect(() => {
-    setContent(getStarredContent());
-  }, []);
+  const starredContent = React.useMemo(
+    () => getStarredContentFromList(content),
+    [content]
+  );
 
   // Sort content
   const sortedContent = React.useMemo(() => {
-    return [...content].sort((a, b) => {
+    return [...starredContent].sort((a, b) => {
       switch (sortBy) {
         case "title":
           return a.title.localeCompare(b.title);

@@ -3,6 +3,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import type { MermaidBlock as MermaidBlockType } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component (Mermaid is heavy)
 const MermaidBlockComponent = React.lazy(() =>
@@ -15,7 +16,12 @@ const DEFAULT_DIAGRAM = `graph TD
   A[Start] --> B[End]`;
 
 // NodeView component
-function MermaidBlockView({ node, updateAttributes }: NodeViewProps) {
+function MermaidBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   // Generate a unique ID for this block instance
   const blockId = React.useRef(
     `mermaid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -39,7 +45,12 @@ function MermaidBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="mermaid-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="mermaid-block"
+      data-label="Mermaid"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div

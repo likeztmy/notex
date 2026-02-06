@@ -1,12 +1,6 @@
 import * as React from "react";
 
-function ShortcutRow({
-  label,
-  shortcut,
-}: {
-  label: string;
-  shortcut: string;
-}) {
+function ShortcutRow({ label, shortcut }: { label: string; shortcut: string }) {
   return (
     <div className="flex justify-between items-center py-2">
       <span style={{ color: "var(--color-linear-text-secondary)" }}>
@@ -26,6 +20,9 @@ function ShortcutRow({
 }
 
 const SHORTCUTS: { label: string; shortcut: string }[] = [
+  { label: "Quick Switcher", shortcut: "⌘ K" },
+  { label: "Show Shortcuts", shortcut: "⌘ /" },
+  { label: "Focus Mode", shortcut: "⌘ ⇧ F" },
   { label: "Bold", shortcut: "⌘ B" },
   { label: "Italic", shortcut: "⌘ I" },
   { label: "Inline Code", shortcut: "⌘ E" },

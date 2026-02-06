@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as React from "react";
-import { TagIcon, ArrowLeftIcon, LayoutGridIcon, ListIcon } from "lucide-react";
-import { getContentByTag, getAllTags } from "~/utils/contentStorage";
+import { TagIcon, LayoutGridIcon, ListIcon } from "lucide-react";
 import { ContentTable } from "~/components/ContentTable";
 import { ContentGrid } from "~/components/ContentGrid";
 import { PageToolbar } from "~/components/PageToolbar";
 import { ToolbarButton } from "~/components/ToolbarButton";
-import type { Content } from "~/types/content";
+import { useContentStore } from "~/store/contentStore";
+import {
+  getAllTagsFromContent,
+  getContentByTagFromList,
+} from "~/utils/contentQuery";
 
 export const Route = createFileRoute("/tags/$tagName")({
   component: TagPage,
@@ -16,26 +19,28 @@ function TagPage() {
   const { tagName } = Route.useParams();
   const displayTagName = decodeURIComponent(tagName);
 
-  const [content, setContent] = React.useState<Content[]>([]);
-  const [allTags, setAllTags] = React.useState<string[]>([]);
+  const content = useContentStore((state) => state.content);
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
 
-  // Load content with this tag
-  React.useEffect(() => {
-    setContent(getContentByTag(displayTagName));
-    setAllTags(getAllTags().filter((t) => t !== displayTagName));
-  }, [displayTagName]);
+  const taggedContent = React.useMemo(
+    () => getContentByTagFromList(content, displayTagName),
+    [content, displayTagName]
+  );
+  const allTags = React.useMemo(
+    () => getAllTagsFromContent(content).filter((t) => t !== displayTagName),
+    [content, displayTagName]
+  );
 
   // Get related tags (tags that appear in documents with this tag)
   const relatedTags = React.useMemo(() => {
     const tagSet = new Set<string>();
-    content.forEach((doc) => {
+    taggedContent.forEach((doc) => {
       doc.tags?.forEach((tag) => {
         if (tag !== displayTagName) tagSet.add(tag);
       });
     });
     return Array.from(tagSet).slice(0, 8);
-  }, [content, displayTagName]);
+  }, [taggedContent, displayTagName]);
 
   return (
     <div
@@ -72,20 +77,20 @@ function TagPage() {
             className="text-sm"
             style={{ color: "var(--color-linear-text-tertiary)" }}
           >
-            {content.length} document{content.length !== 1 ? "s" : ""} with this
-            tag
+            {taggedContent.length} document
+            {taggedContent.length !== 1 ? "s" : ""} with this tag
           </p>
         </div>
 
         {/* Content */}
         {viewMode === "grid" ? (
           <ContentGrid
-            content={content}
+            content={taggedContent}
             emptyMessage={`No documents tagged with #${displayTagName}`}
           />
         ) : (
           <ContentTable
-            content={content}
+            content={taggedContent}
             emptyMessage={`No documents tagged with #${displayTagName}`}
           />
         )}

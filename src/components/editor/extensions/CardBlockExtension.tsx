@@ -3,6 +3,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import type { CardBlock as CardBlockType, CardStyle } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component
 const CardBlockComponent = React.lazy(() =>
@@ -12,7 +13,12 @@ const CardBlockComponent = React.lazy(() =>
 );
 
 // NodeView component
-function CardBlockView({ node, updateAttributes }: NodeViewProps) {
+function CardBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: CardBlockType = {
     id: "",
     type: "card",
@@ -34,7 +40,12 @@ function CardBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="card-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="card-block"
+      data-label="Card"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div

@@ -40,6 +40,41 @@ export function SlashMenu({
   onKeyDown,
 }: SlashMenuProps) {
   const itemRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const groupedCommands = React.useMemo(() => {
+    const order = [
+      "Writing",
+      "Templates",
+      "Structure",
+      "Code & Media",
+      "Advanced",
+    ];
+    const groups = new Map<
+      string,
+      { name: string; items: { item: BlockCommand; index: number }[] }
+    >();
+
+    commands.forEach((item, index) => {
+      if (!groups.has(item.category)) {
+        groups.set(item.category, { name: item.category, items: [] });
+      }
+      groups.get(item.category)?.items.push({ item, index });
+    });
+
+    const orderedGroups = order
+      .map((name) => groups.get(name))
+      .filter(Boolean) as {
+      name: string;
+      items: { item: BlockCommand; index: number }[];
+    }[];
+
+    groups.forEach((group) => {
+      if (!order.includes(group.name)) {
+        orderedGroups.push(group);
+      }
+    });
+
+    return orderedGroups;
+  }, [commands]);
 
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
@@ -88,23 +123,36 @@ export function SlashMenu({
       <style>{SLASH_MENU_CSS}</style>
       <div className="max-h-[320px] overflow-y-auto slash-menu-scroll">
         {commands.length === 0 ? (
-          <div className="px-3 py-6 text-center text-sm" style={{ color: "var(--color-linear-text-tertiary)" }}>
+          <div
+            className="px-3 py-6 text-center text-sm"
+            style={{ color: "var(--color-linear-text-tertiary)" }}
+          >
             No matches
           </div>
         ) : (
           <div className="py-1">
-            {commands.map((item, index) => (
-              <SlashMenuItem
-                key={index}
-                item={item}
-                index={index}
-                isSelected={index === selectedIndex}
-                itemRef={(el) => {
-                  itemRefs.current[index] = el;
-                }}
-                onSelect={() => onSelectIndex(index)}
-                onRun={() => onRunCommand(index)}
-              />
+            {groupedCommands.map((group) => (
+              <div key={group.name} className="py-2">
+                <div
+                  className="px-3 pb-1 text-[11px] uppercase tracking-[0.18em]"
+                  style={{ color: "var(--color-linear-text-tertiary)" }}
+                >
+                  {group.name}
+                </div>
+                {group.items.map(({ item, index }) => (
+                  <SlashMenuItem
+                    key={`${group.name}-${index}`}
+                    item={item}
+                    index={index}
+                    isSelected={index === selectedIndex}
+                    itemRef={(el) => {
+                      itemRefs.current[index] = el;
+                    }}
+                    onSelect={() => onSelectIndex(index)}
+                    onRun={() => onRunCommand(index)}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}
@@ -171,6 +219,17 @@ function SlashMenuItem({
           {item.description}
         </span>
       </span>
+      {item.shortcut ? (
+        <span
+          className="text-[11px] px-2 py-1 rounded-md"
+          style={{
+            background: "var(--color-linear-bg-secondary)",
+            color: "var(--color-linear-text-tertiary)",
+          }}
+        >
+          {item.shortcut}
+        </span>
+      ) : null}
     </button>
   );
 }

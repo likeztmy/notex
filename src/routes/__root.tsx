@@ -13,6 +13,7 @@ import { NotFound } from "~/components/NotFound";
 import { PageHeaderProvider } from "~/components/PageHeader";
 import { SearchModal, useSearchModal } from "~/components/SearchModal";
 import { ThemeProvider } from "~/components/ThemeProvider";
+import { useContentStore } from "~/store/contentStore";
 import { seo } from "~/utils/seo";
 
 export const Route = createRootRoute({
@@ -42,8 +43,9 @@ function RootLayout() {
 
   // Pages that don't need sidebar (homepage and board)
   const noSidebarPaths = ["/", "/board"];
-
-  const shouldShowSidebar = !noSidebarPaths.includes(location.pathname);
+  const shouldShowSidebar =
+    !noSidebarPaths.includes(location.pathname) &&
+    !location.pathname.startsWith("/public");
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
@@ -181,6 +183,11 @@ export function useSearchModalContext() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const searchModal = useSearchModal();
+  const loadContent = useContentStore((state) => state.load);
+
+  React.useEffect(() => {
+    loadContent();
+  }, [loadContent]);
 
   return (
     <SearchModalContext.Provider value={{ open: searchModal.open }}>

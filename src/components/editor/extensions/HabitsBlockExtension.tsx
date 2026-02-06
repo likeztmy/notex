@@ -3,6 +3,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import type { HabitsBlock as HabitsBlockType, Habit } from "~/types/block";
+import { BlockToolbar } from "~/components/editor/BlockToolbar";
 
 // Lazy load the component
 const HabitsBlockComponent = React.lazy(() =>
@@ -12,7 +13,12 @@ const HabitsBlockComponent = React.lazy(() =>
 );
 
 // NodeView component
-function HabitsBlockView({ node, updateAttributes }: NodeViewProps) {
+function HabitsBlockView({
+  node,
+  updateAttributes,
+  editor,
+  getPos,
+}: NodeViewProps) {
   const block: HabitsBlockType = {
     id: "",
     type: "habits",
@@ -32,7 +38,12 @@ function HabitsBlockView({ node, updateAttributes }: NodeViewProps) {
   );
 
   return (
-    <NodeViewWrapper className="tiptap-block-wrapper" data-type="habits-block">
+    <NodeViewWrapper
+      className="tiptap-block-wrapper"
+      data-type="habits-block"
+      data-label="Habits"
+    >
+      <BlockToolbar editor={editor} node={node} getPos={getPos} />
       <React.Suspense
         fallback={
           <div

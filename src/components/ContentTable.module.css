@@ -16,18 +16,18 @@
 }
 
 .emptyText {
-  font-size: 14px;
-  color: var(--color-linear-text-tertiary);
+  font-size: var(--view-preview-size);
+  color: var(--view-preview-color);
 }
 
 /* Table Header */
 .tableHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 140px 140px 140px 48px;
+  grid-template-columns: minmax(0, 1fr) 128px 128px 128px 40px;
   gap: 1rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-linear-border-primary);
-  font-size: 12px;
+  font-size: var(--view-meta-size);
   text-transform: uppercase;
   letter-spacing: 0.02em;
   font-weight: 500;
@@ -55,21 +55,29 @@
 /* Table Row */
 .tableRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 140px 140px 140px 48px;
+  grid-template-columns: minmax(0, 1fr) 128px 128px 128px 40px;
   gap: 1rem;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-linear-border-secondary);
   transition: background 0.1s ease;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--view-radius);
   margin: 0 0 2px 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px;
+  position: relative;
+  z-index: 0;
 }
 
 .tableRow:hover {
-  background: var(--color-linear-bg-hover);
+  background: var(--view-hover-bg);
+}
+
+.tableRowActive {
+  z-index: 40;
 }
 
 /* Name Column */
@@ -83,14 +91,14 @@
 
 .fileIcon {
   flex-shrink: 0;
-  width: 2.25rem;
-  height: 2.75rem;
-  border-radius: 4px;
+  width: var(--view-icon-size);
+  height: var(--view-icon-size);
+  border-radius: var(--view-icon-radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-linear-bg-elevated);
-  border: 1px solid var(--color-linear-border-primary);
+  background: var(--view-icon-bg);
+  border: 1px solid var(--view-border);
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   color: var(--color-linear-text-secondary);
   position: relative;
@@ -103,8 +111,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background-image: 
     linear-gradient(var(--color-linear-text-tertiary) 1px, transparent 1px),
     linear-gradient(var(--color-linear-text-tertiary) 1px, transparent 1px);
@@ -121,8 +129,8 @@
 }
 
 .fileName {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--view-title-weight);
+  font-size: var(--view-title-size);
   color: var(--color-linear-text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -130,8 +138,8 @@
 }
 
 .filePreview {
-  font-size: 13px;
-  color: var(--color-linear-text-tertiary);
+  font-size: var(--view-preview-size);
+  color: var(--view-preview-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,8 +148,8 @@
 
 /* Date Columns */
 .dateColumn {
-  font-size: 13px;
-  color: var(--color-linear-text-tertiary);
+  font-size: var(--view-meta-size);
+  color: var(--view-meta-color);
 }
 
 /* Actions Column */
@@ -186,8 +194,8 @@
 }
 
 .starButton.starred svg {
-  fill: #f59e0b;
-  color: #f59e0b;
+  fill: var(--color-linear-warning);
+  color: var(--color-linear-warning);
 }
 
 .moreButton {
@@ -213,16 +221,14 @@
 
 /* Actions Menu */
 .actionsMenu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 4px;
+  position: fixed;
+  margin-top: 0;
   width: 160px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 1px solid var(--color-linear-border-primary);
   background: var(--color-linear-bg-elevated);
-  z-index: 20;
+  z-index: 9999;
   overflow: hidden;
   padding: 4px;
 }

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, X } from "lucide-react";
 import type { TasksBlock as TasksBlockType, TaskItem } from "~/types/block";
 
 interface TasksBlockProps {
@@ -29,7 +29,7 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
   const toggleTask = (taskId: string) => {
     onChange({
       tasks: block.tasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
+        task.id === taskId ? { ...task, completed: !task.completed } : task
       ),
     });
   };
@@ -43,7 +43,7 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
   const updateTaskText = (taskId: string, text: string) => {
     onChange({
       tasks: block.tasks.map((task) =>
-        task.id === taskId ? { ...task, text } : task,
+        task.id === taskId ? { ...task, text } : task
       ),
     });
   };
@@ -53,52 +53,57 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="space-y-3">
-      {/* Title */}
-      <input
-        type="text"
-        value={block.title || ""}
-        onChange={(e) => onChange({ title: e.target.value })}
-        placeholder="Task List Title"
-        className="w-full text-lg font-semibold border-none outline-none bg-transparent"
-        style={{ color: "var(--color-linear-text-primary)" }}
-      />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={block.title || ""}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="Tasks"
+            className="w-full text-sm font-semibold border-none outline-none bg-transparent"
+            style={{ color: "var(--color-linear-text-primary)" }}
+          />
+          <div className="block-label">Tasks</div>
+        </div>
+        {block.showProgress && totalCount > 0 && (
+          <span
+            className="text-xs px-2 py-1 rounded-full"
+            style={{
+              background: "var(--color-linear-bg-tertiary)",
+              color: "var(--color-linear-text-secondary)",
+            }}
+          >
+            {Math.round(progress)}%
+          </span>
+        )}
+      </div>
 
       {/* Progress Bar */}
       {block.showProgress && totalCount > 0 && (
-        <div className="space-y-1">
+        <div
+          className="h-1.5 rounded-full overflow-hidden"
+          style={{ background: "var(--color-linear-bg-secondary)" }}
+        >
           <div
-            className="flex items-center justify-between text-xs"
-            style={{ color: "var(--color-linear-text-tertiary)" }}
-          >
-            <span>
-              {completedCount} of {totalCount} completed
-            </span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <div
-            className="h-2 rounded-full overflow-hidden"
-            style={{ background: "var(--color-linear-bg-secondary)" }}
-          >
-            <div
-              className="h-full transition-all duration-300 rounded-full"
-              style={{
-                width: `${progress}%`,
-                background: "var(--color-linear-accent-primary)",
-              }}
-            />
-          </div>
+            className="h-full transition-all duration-300 rounded-full"
+            style={{
+              width: `${progress}%`,
+              background: "var(--color-linear-accent-primary)",
+            }}
+          />
         </div>
       )}
 
       {/* Task List */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {block.tasks.map((task) => (
-          <div key={task.id} className="flex items-start gap-2 group">
+          <div key={task.id} className="flex items-start gap-2.5 group">
             {/* Checkbox */}
             <button
               onClick={() => toggleTask(task.id)}
-              className="mt-0.5 w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-all"
+              className="mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all"
               style={{
                 borderColor: task.completed
                   ? "var(--color-linear-accent-primary)"
@@ -108,7 +113,7 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
                   : "transparent",
               }}
             >
-              {task.completed && <Check className="w-3.5 h-3.5 text-white" />}
+              {task.completed && <Check className="w-3 h-3 text-white" />}
             </button>
 
             {/* Task Text */}
@@ -116,7 +121,7 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
               type="text"
               value={task.text}
               onChange={(e) => updateTaskText(task.id, e.target.value)}
-              className={`flex-1 border-none outline-none bg-transparent ${
+              className={`flex-1 border-none outline-none bg-transparent text-sm ${
                 task.completed ? "line-through opacity-60" : ""
               }`}
               style={{ color: "var(--color-linear-text-primary)" }}
@@ -127,18 +132,23 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
               onClick={() => deleteTask(task.id)}
               className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-xs"
             >
-              Delete
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}
       </div>
 
       {/* Add Task Input */}
-      <div className="flex items-center gap-2 pt-2">
-        <Plus
-          className="w-4 h-4"
-          style={{ color: "var(--color-linear-text-tertiary)" }}
-        />
+      <div className="flex items-center gap-2 pt-1">
+        <div
+          className="w-4 h-4 flex items-center justify-center rounded border"
+          style={{ borderColor: "var(--color-linear-border-primary)" }}
+        >
+          <Plus
+            className="w-3 h-3"
+            style={{ color: "var(--color-linear-text-tertiary)" }}
+          />
+        </div>
         <input
           type="text"
           value={newTaskText}
@@ -155,7 +165,7 @@ export function TasksBlock({ block, onChange }: TasksBlockProps) {
         {newTaskText && (
           <button
             onClick={addTask}
-            className="text-xs px-2 py-1 rounded"
+            className="text-xs px-2.5 py-1 rounded-full"
             style={{
               background: "var(--color-linear-accent-primary)",
               color: "white",

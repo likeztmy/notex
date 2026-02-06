@@ -1,12 +1,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Folder, FolderPlus, Check, X } from "lucide-react";
-import {
-  loadFolders,
-  moveToFolder,
-  createNewFolder,
-} from "~/utils/contentStorage";
-import type { Folder as FolderType } from "~/types/content";
+import { useContentStore } from "~/store/contentStore";
 
 interface MoveToFolderDialogProps {
   isOpen: boolean;
@@ -23,7 +18,10 @@ export function MoveToFolderDialog({
   currentFolderId,
   onMoved,
 }: MoveToFolderDialogProps) {
-  const [folders, setFolders] = React.useState<FolderType[]>([]);
+  const folders = useContentStore((state) => state.folders);
+  const load = useContentStore((state) => state.load);
+  const createFolder = useContentStore((state) => state.createFolder);
+  const moveToFolder = useContentStore((state) => state.moveToFolder);
   const [selectedFolderId, setSelectedFolderId] = React.useState<string | null>(
     currentFolderId || null
   );
@@ -34,10 +32,10 @@ export function MoveToFolderDialog({
   // Load folders
   React.useEffect(() => {
     if (isOpen) {
-      setFolders(loadFolders());
+      load();
       setSelectedFolderId(currentFolderId || null);
     }
-  }, [isOpen, currentFolderId]);
+  }, [isOpen, currentFolderId, load]);
 
   // Focus new folder input
   React.useEffect(() => {
@@ -48,8 +46,7 @@ export function MoveToFolderDialog({
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
-      const folder = createNewFolder(newFolderName.trim());
-      setFolders(loadFolders());
+      const folder = createFolder(newFolderName.trim());
       setSelectedFolderId(folder.id);
       setNewFolderName("");
       setIsCreatingFolder(false);
